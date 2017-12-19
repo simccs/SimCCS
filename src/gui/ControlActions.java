@@ -6,11 +6,20 @@ import dataStore.Edge;
 import dataStore.Sink;
 import dataStore.Solution;
 import dataStore.Source;
-import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.URL;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Random;
@@ -32,21 +41,13 @@ import solver.MPSWriter;
 import solver.Solver;
 import static utilities.Utilities.*;
 
-import java.util.List;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Node;
-import javafx.scene.Parent;
 import javafx.scene.Scene;
-import static javafx.scene.input.DataFormat.URL;
 import javafx.scene.layout.StackPane;
-import javafx.scene.web.PopupFeatures;
 import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
 import javafx.stage.Stage;
-import javafx.stage.StageStyle;
-import javafx.util.Callback;
 
 /**
  *
@@ -251,9 +252,74 @@ public class ControlActions {
             MPSWriter.writeMPS("mip.mps", data, Double.parseDouble(crf), Double.parseDouble(numYears), Double.parseDouble(capacityTarget), basePath, dataset, scenario);
         }
     }
-    
+
     public void runCPLEX() {
-        System.out.println("TODO");
+        // Check if CPLEX exists.
+        try {
+            Runtime r = Runtime.getRuntime();
+            r.exec("cplex");
+
+            // Copy mps file and make command files.
+            DateFormat dateFormat = new SimpleDateFormat("ddMMyyy-HHmmssss");
+            Date date = new Date();
+            String run = "run" + dateFormat.format(date);
+            File solutionDirectory = new File(basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + run);
+            String os = System.getProperty("os.name");
+            try {
+                solutionDirectory.mkdir();
+
+                // Copy MPS file into results file.
+                String mipPath = basePath + "/" + dataset + "/Scenarios/" + scenario + "/MIP/mip.mps";
+                Path from = Paths.get(mipPath);
+                Path to = Paths.get(solutionDirectory + "/mip.mps");
+                Files.copy(from, to, StandardCopyOption.REPLACE_EXISTING);
+
+                // Make cplex commands file.
+                PrintWriter cplexCommands = new PrintWriter(solutionDirectory + "/cplexCommands.txt");
+                cplexCommands.println("read mip.mps");
+                cplexCommands.println("opt");
+                cplexCommands.println("write solution.sol");
+                cplexCommands.println("quit");
+                cplexCommands.close();
+
+                // Make OS script file.
+                if (os.toLowerCase().contains("mac")) {
+                    File osCommandsFile = new File(solutionDirectory + "/osCommands.sh");
+                    PrintWriter osCommands = new PrintWriter(osCommandsFile);
+                    osCommands.println("#!/bin/sh");
+                    osCommands.println("cplex < cplexCommands.txt;");
+                    osCommands.println("done");
+                    osCommands.close();
+                    osCommandsFile.setExecutable(true);
+                } else if (os.toLowerCase().contains("windows")) {
+                    File osCommandsFile = new File(solutionDirectory + "/osCommands.bat");
+                    PrintWriter osCommands = new PrintWriter(osCommandsFile);
+                    osCommands.println("@echo off");
+                    osCommands.println("cplex < cplexCommands.txt");
+                    osCommands.close();
+                    osCommandsFile.setExecutable(true);
+                }
+            } catch (FileNotFoundException e) {
+            } catch (IOException e) {
+            }
+
+            try {
+                if (os.toLowerCase().contains("mac")) {
+                    String[] args = new String[]{"/usr/bin/open", "-a", "Terminal", solutionDirectory.getAbsolutePath() + "/osCommands.sh"};
+                    ProcessBuilder pb = new ProcessBuilder(args);
+                    pb.directory(solutionDirectory);
+                    Process p = pb.start();
+                } else if (os.toLowerCase().contains("windows")) {
+                    String[] args = new String[]{"cmd.exe", "/C", "start", solutionDirectory.getAbsolutePath() + "/osCommands.bat"};
+                    ProcessBuilder pb = new ProcessBuilder(args);
+                    pb.directory(solutionDirectory);
+                    Process p = pb.start();
+                }
+            } catch (IOException e) {
+            }
+        } catch (IOException e) {
+            messenger.setText("Error: Make sure CPLEX is installed and in System PATH.");
+        }
     }
 
     // Code to manage science gateway interface

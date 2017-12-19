@@ -93,6 +93,7 @@ public class Gui extends Application {
         messengerPane.setLayoutY(580);
         TextArea messenger = new TextArea();
         messenger.setEditable(false);
+        messenger.setWrapText(true);
         messenger.setPrefSize(192, 70);
         messenger.setLayoutX(14);
         messenger.setLayoutY(5);
