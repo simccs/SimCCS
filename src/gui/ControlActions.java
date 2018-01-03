@@ -274,24 +274,30 @@ public class ControlActions {
                 Path to = Paths.get(solutionDirectory + "/mip.mps");
                 Files.copy(from, to, StandardCopyOption.REPLACE_EXISTING);
 
-                // Make cplex commands file.
-                PrintWriter cplexCommands = new PrintWriter(solutionDirectory + "/cplexCommands.txt");
-                cplexCommands.println("read mip.mps");
-                cplexCommands.println("opt");
-                cplexCommands.println("write solution.sol");
-                cplexCommands.println("quit");
-                cplexCommands.close();
-
-                // Make OS script file.
+                // Make OS script file and cplex commands file.
                 if (os.toLowerCase().contains("mac")) {
+                    PrintWriter cplexCommands = new PrintWriter(solutionDirectory + "/cplexCommands.txt");
+                    cplexCommands.println("set logfile *");
+                    cplexCommands.println("read " + solutionDirectory.getAbsolutePath() + "/mip.mps");
+                    cplexCommands.println("opt");
+                    cplexCommands.println("write " + solutionDirectory.getAbsolutePath() + "/solution.sol");
+                    cplexCommands.println("quit");
+                    cplexCommands.close();
+
                     File osCommandsFile = new File(solutionDirectory + "/osCommands.sh");
                     PrintWriter osCommands = new PrintWriter(osCommandsFile);
                     osCommands.println("#!/bin/sh");
-                    osCommands.println("cplex < cplexCommands.txt;");
-                    osCommands.println("done");
+                    osCommands.println("cplex < " + solutionDirectory.getAbsolutePath() + "/cplexCommands.txt");
                     osCommands.close();
                     osCommandsFile.setExecutable(true);
                 } else if (os.toLowerCase().contains("windows")) {
+                    PrintWriter cplexCommands = new PrintWriter(solutionDirectory + "/cplexCommands.txt");
+                    cplexCommands.println("read mip.mps");
+                    cplexCommands.println("opt");
+                    cplexCommands.println("write solution.sol");
+                    cplexCommands.println("quit");
+                    cplexCommands.close();
+
                     File osCommandsFile = new File(solutionDirectory + "/osCommands.bat");
                     PrintWriter osCommands = new PrintWriter(osCommandsFile);
                     osCommands.println("@echo off");
