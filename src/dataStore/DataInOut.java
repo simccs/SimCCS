@@ -29,6 +29,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 /**
  *
@@ -766,7 +769,12 @@ public class DataInOut {
         try {
             URL url = new URL(urlPath);
             connection = (HttpURLConnection) url.openConnection();
-            String directoryPath = basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/run";
+            
+            DateFormat dateFormat = new SimpleDateFormat("ddMMyyy-HHmmssss");
+            Date date = new Date();
+            String run = "run" + dateFormat.format(date);
+            
+            String directoryPath = basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + run;
             File directory = new File(directoryPath);
             directory.mkdir();
             
