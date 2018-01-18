@@ -9,6 +9,7 @@ import dataStore.Source;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
@@ -604,8 +605,74 @@ public class ControlActions {
 
                 // Write to shapefiles.
                 DataInOut.makeShapeFiles(basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + file, soln);
+
+                //determineROW(soln);
             }
         }
+    }
+
+    public void determineROW(Solution soln) {
+        // read in right of way file
+        String rowFileLocation = basePath + "/" + dataset + "/BaseData/CostSurface/Ascii/rows.asc";
+        boolean[] rightOfWay = new boolean[data.getWidth() * data.getHeight() + 1];
+        try (BufferedReader br = new BufferedReader(new FileReader(rowFileLocation))) {
+            for (int i = 0; i < 6; i++) {
+                br.readLine();
+            }
+            String line = br.readLine();
+            int cellNum = 1;
+            while (line != null) {
+                String[] costs = line.split("\\s+");
+                for (String cost : costs) {
+                    int val = Integer.parseInt(cost);
+                    if (val != -9999) {
+                        rightOfWay[cellNum] = true;
+                    }
+                    cellNum++;
+                }
+                line = br.readLine();
+            }
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+        }
+
+        // compare solution to right of way
+        HashSet<Integer> usedCells = new HashSet<>();
+        HashSet<Integer> rowedCells = new HashSet<>();
+        HashSet<int[]> rowedPairs = new HashSet<>();
+        HashMap<Edge, int[]> graphEdgeRoutes = data.getGraphEdgeRoutes();
+        for (Edge e : soln.getOpenedEdges()) {
+            int[] route = graphEdgeRoutes.get(e);
+            for (int i = 0; i < route.length - 1; i++) {
+                if (rightOfWay[route[i]] && rightOfWay[route[i + 1]]) {
+                    rowedPairs.add(new int[]{route[i], route[i + 1]});
+                }
+            }
+            for (int cell : route) {
+                usedCells.add(cell);
+                if (rightOfWay[cell]) {
+                    rowedCells.add(cell);
+                }
+            }
+        }
+
+        // display ROWed edges
+        for (int[] pair : rowedPairs) {
+            double[] rawSrc = data.cellLocationToRawXY(pair[0]);
+            double[] rawDest = data.cellLocationToRawXY(pair[1]);
+            double sX = rawXtoDisplayX(rawSrc[0]);
+            double sY = rawYtoDisplayY(rawSrc[1]);
+            double dX = rawXtoDisplayX(rawDest[0]);
+            double dY = rawYtoDisplayY(rawDest[1]);
+            Line edge = new Line(sX, sY, dX, dY);
+            edge.setStroke(Color.PURPLE);
+            edge.setStrokeWidth(5.0 / gui.getScale());
+            edge.setStrokeLineCap(StrokeLineCap.ROUND);
+            solutionLayer.getChildren().add(edge);
+        }
+
+        double percentUsed = rowedCells.size() / (double) usedCells.size();
+        messenger.setText("Percent on existing ROW: " + percentUsed);
     }
 
     public void aggregateSolutions(String file, Label[] solutionValues) {

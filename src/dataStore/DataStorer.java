@@ -22,7 +22,6 @@ public class DataStorer {
     // Geospatial data.
     private int width;
     private int height;
-    private int numCells;
     private double lowerLeftX;
     private double lowerLeftY;
     private double cellSize;
