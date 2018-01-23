@@ -1,5 +1,10 @@
 package gui;
 
+import com.bbn.openmap.dataAccess.shape.DbfTableModel;
+import com.bbn.openmap.dataAccess.shape.EsriPolyline;
+import com.bbn.openmap.dataAccess.shape.EsriPolylineList;
+import com.bbn.openmap.dataAccess.shape.EsriShapeExport;
+import com.bbn.openmap.omGraphics.OMGraphic;
 import dataStore.DataInOut;
 import dataStore.DataStorer;
 import dataStore.Edge;
@@ -606,12 +611,12 @@ public class ControlActions {
                 // Write to shapefiles.
                 DataInOut.makeShapeFiles(basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + file, soln);
 
-                //determineROW(soln);
+                //determineROW(soln, basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + file);
             }
         }
     }
 
-    public void determineROW(Solution soln) {
+    public void determineROW(Solution soln, String path) {
         // read in right of way file
         String rowFileLocation = basePath + "/" + dataset + "/BaseData/CostSurface/Ascii/rows.asc";
         boolean[] rightOfWay = new boolean[data.getWidth() * data.getHeight() + 1];
@@ -641,8 +646,12 @@ public class ControlActions {
         HashSet<Integer> rowedCells = new HashSet<>();
         HashSet<int[]> rowedPairs = new HashSet<>();
         HashMap<Edge, int[]> graphEdgeRoutes = data.getGraphEdgeRoutes();
+        ArrayList<ArrayList<Integer>> existingRowRoutes = new ArrayList<>();
+        ArrayList<ArrayList<Integer>> newRowRoutes = new ArrayList<>();
         for (Edge e : soln.getOpenedEdges()) {
             int[] route = graphEdgeRoutes.get(e);
+            boolean existingROW = false;
+            ArrayList<Integer> newRoute = new ArrayList<>();
             for (int i = 0; i < route.length - 1; i++) {
                 if (rightOfWay[route[i]] && rightOfWay[route[i + 1]]) {
                     rowedPairs.add(new int[]{route[i], route[i + 1]});
@@ -651,8 +660,28 @@ public class ControlActions {
             for (int cell : route) {
                 usedCells.add(cell);
                 if (rightOfWay[cell]) {
+                    if (!existingROW) {
+                        // swap: new ROW -> existing ROW
+                        newRowRoutes.add(newRoute);
+                        newRoute = new ArrayList<>();
+                        existingROW = true;
+                    }
+                    newRoute.add(cell);
                     rowedCells.add(cell);
+                } else {
+                    if (existingROW) {
+                        // swap: existing ROW -> new ROW
+                        existingRowRoutes.add(newRoute);
+                        newRoute = new ArrayList<>();
+                        existingROW = false;
+                    } 
+                    newRoute.add(cell);
                 }
+            }
+            if (existingROW) {
+                existingRowRoutes.add(newRoute);
+            } else {
+                newRowRoutes.add(newRoute);
             }
         }
 
@@ -673,6 +702,52 @@ public class ControlActions {
 
         double percentUsed = rowedCells.size() / (double) usedCells.size();
         messenger.setText("Percent on existing ROW: " + percentUsed);
+        makeRowShapeFiles("ExistingROW", path + "/shapeFiles/", existingRowRoutes);
+        makeRowShapeFiles("NewROW", path + "/shapeFiles/", newRowRoutes);
+    }
+
+    public void makeRowShapeFiles(String name, String path, ArrayList<ArrayList<Integer>> routes) {
+        EsriPolylineList edgeList = new EsriPolylineList();
+        String[] edgeAttributeNames = {"Id", "CapID", "CapValue", "Flow", "Cost", "LengKM", "LengROW", "LengCONS", "Variable"};
+        int[] edgeAttributeDecimals = {0, 0, 0, 6, 0, 0, 0, 0, 0};
+        DbfTableModel edgeAttributeTable = new DbfTableModel(edgeAttributeNames.length);   //12
+        for (int colNum = 0; colNum < edgeAttributeNames.length; colNum++) {
+            edgeAttributeTable.setColumnName(colNum, edgeAttributeNames[colNum]);
+            edgeAttributeTable.setDecimalCount(colNum, (byte) edgeAttributeDecimals[colNum]);
+            edgeAttributeTable.setLength(colNum, 10);
+            if (edgeAttributeNames[colNum].equals("Id")) {
+                edgeAttributeTable.setType(colNum, DbfTableModel.TYPE_CHARACTER);
+            } else {
+                edgeAttributeTable.setType(colNum, DbfTableModel.TYPE_NUMERIC);
+            }
+        }
+        
+        for (ArrayList<Integer> route : routes) {
+            double[] routeLatLon = new double[route.size() * 2];    // Route cells translated into: lat, lon, lat, lon,...
+            for (int i = 0; i < route.size(); i++) {
+                int cell = route.get(i);
+                routeLatLon[i * 2] = data.cellToLatLon(cell)[0];
+                routeLatLon[i * 2 + 1] = data.cellToLatLon(cell)[1];
+            }
+
+            EsriPolyline edge = new EsriPolyline(routeLatLon, OMGraphic.DECIMAL_DEGREES, OMGraphic.LINETYPE_STRAIGHT);
+            edgeList.add(edge);
+
+            // Add attributes.
+            ArrayList row = new ArrayList();
+            for (int i = 0; i < 3; i++) {
+                row.add(0);
+            }
+            row.add(0);
+            for (int i = 0; i < 5; i++) {
+                row.add(0);
+            }
+
+            edgeAttributeTable.addRecord(row);
+        }
+
+        EsriShapeExport writeEdgeShapefiles = new EsriShapeExport(edgeList, edgeAttributeTable, path + "/" + name);
+        writeEdgeShapefiles.export();
     }
 
     public void aggregateSolutions(String file, Label[] solutionValues) {
