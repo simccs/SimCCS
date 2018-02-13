@@ -134,6 +134,16 @@ public class MPSWriter {
                     }
                     contVariableToConstraints.get(p[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c]).add(new ConstraintTerm(constraint, 1));
 
+                    // Get max pipeline capacity.
+                    double maxCap = capacityTarget;
+                    if (c < linearComponents.length - 1) {
+                        double alpha1 = linearComponents[c].getConAlpha() + linearComponents[c].getRowAlpha();
+                        double beta1 = linearComponents[c].getConBeta() + linearComponents[c].getRowBeta();
+                        double alpha2 = linearComponents[c + 1].getConAlpha() + linearComponents[c + 1].getRowAlpha();
+                        double beta2 = linearComponents[c + 1].getConBeta() + linearComponents[c + 1].getRowBeta();
+                        maxCap = (beta2 - beta1) / (alpha1 - alpha2);
+                    }
+
                     if (!intVariableToConstraints.containsKey(y[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c])) {
                         intVariableToConstraints.put(y[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c], new HashSet<ConstraintTerm>());
                     }
@@ -200,7 +210,7 @@ public class MPSWriter {
                         constraintToSign.put(constraint, "E");
                     }
                 }
-            } 
+            }
             if (sinkCells.contains(src)) {
                 for (Sink sink : sinks) {
                     if (sink.getCellNum() == src) {
