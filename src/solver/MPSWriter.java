@@ -147,7 +147,7 @@ public class MPSWriter {
                     if (!intVariableToConstraints.containsKey(y[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c])) {
                         intVariableToConstraints.put(y[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c], new HashSet<ConstraintTerm>());
                     }
-                    intVariableToConstraints.get(y[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c]).add(new ConstraintTerm(constraint, -capacityTarget));
+                    intVariableToConstraints.get(y[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c]).add(new ConstraintTerm(constraint, -maxCap));
 
                     constraintToSign.put(constraint, "L");
                     constraintRHS.put(constraint, 0.0);
