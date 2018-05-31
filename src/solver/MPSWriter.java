@@ -363,50 +363,51 @@ public class MPSWriter {
     }
 
     private static void makeFile(String fileName, String basePath, String dataset, String scenario, HashMap<String, HashSet<ConstraintTerm>> intVariableToConstraints, HashMap<String, HashSet<ConstraintTerm>> contVariableToConstraints, HashMap<String, String> constraintToSign, HashMap<String, Double> constraintRHS, HashMap<String, VariableBound> variableBounds) {
-        String problemFormulation = "NAME\tSimCCS\n";
+        StringBuilder problemFormulation = new StringBuilder("NAME\tSimCCS\n");
 
         // Identify constraints.
-        problemFormulation += "ROWS\n";
+        problemFormulation.append("ROWS\n");
         for (String constraint : constraintToSign.keySet()) {
-            problemFormulation += "\t" + constraintToSign.get(constraint) + "\t" + constraint + "\n";
+            problemFormulation.append("\t" + constraintToSign.get(constraint) + "\t" + constraint + "\n");
         }
 
         // Identify columns.
-        problemFormulation += "COLUMNS\n";
-        problemFormulation += "\tMARK0000\t'MARKER'\t'INTORG'\n";
+        problemFormulation.append("COLUMNS\n");
+        problemFormulation.append("\tMARK0000\t'MARKER'\t'INTORG'\n");
         for (String intVar : intVariableToConstraints.keySet()) {
             for (ConstraintTerm term : intVariableToConstraints.get(intVar)) {
-                problemFormulation += "\t" + intVar + "\t" + term.constraint + "\t" + term.coefficient + "\n";
+                problemFormulation.append("\t" + intVar + "\t" + term.constraint + "\t" + term.coefficient + "\n");
             }
         }
-        problemFormulation += "\tMARK0001\t'MARKER'\t'INTEND'\n";
+        problemFormulation.append("\tMARK0001\t'MARKER'\t'INTEND'\n");
         for (String contVar : contVariableToConstraints.keySet()) {
             for (ConstraintTerm term : contVariableToConstraints.get(contVar)) {
-                problemFormulation += "\t" + contVar + "\t" + term.constraint + "\t" + term.coefficient + "\n";
+                problemFormulation.append("\t" + contVar + "\t" + term.constraint + "\t" + term.coefficient + "\n");
             }
         }
 
         // Identify RHSs.
-        problemFormulation += "RHS\n";
+        problemFormulation.append("RHS\n");
         for (String constraint : constraintRHS.keySet()) {
-            problemFormulation += "\trhs\t" + constraint + "\t" + constraintRHS.get(constraint) + "\n";
+            problemFormulation.append("\trhs\t" + constraint + "\t" + constraintRHS.get(constraint) + "\n");
         }
 
         // Identify bounds.
-        problemFormulation += "BOUNDS\n";
+        problemFormulation.append("BOUNDS\n");
         for (String variable : variableBounds.keySet()) {
-            problemFormulation += "\t" + variableBounds.get(variable).type + " bnd\t" + variable + "\t" + variableBounds.get(variable).bound + "\n";
+            problemFormulation.append("\t" + variableBounds.get(variable).type + " bnd\t" + variable + "\t" + variableBounds.get(variable).bound + "\n");
         }
 
         // End file.
-        problemFormulation += "ENDATA";
+        problemFormulation.append("ENDATA");
 
         // Save to file.
         String mipPath = basePath + "/" + dataset + "/Scenarios/" + scenario + "/MIP/" + fileName;
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(mipPath))) {
-            bw.write(problemFormulation);
+            bw.write(problemFormulation.toString());
         } catch (IOException e) {
             System.out.println(e.getMessage());
+
         }
     }
 
