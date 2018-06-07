@@ -610,6 +610,7 @@ public class ControlActions {
 
                 // Write to shapefiles.
                 DataInOut.makeShapeFiles(basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + file, soln);
+                DataInOut.makeCandidateShapeFiles(basePath + "/" + dataset + "/Scenarios/" + scenario);
 
                 //determineROW(soln, basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + file);
             }

@@ -699,6 +699,120 @@ public class DataInOut {
             writeEdgeShapefiles.export();
         }
     }
+    
+        public static void makeCandidateShapeFiles(String path) {
+        // Make shapefiles if they do not already exist.
+        File newDir = new File(path + "/shapeFiles/");
+        if (!newDir.exists()) {
+            newDir.mkdir();
+
+            // Collect data.
+            Source[] sources = data.getSources();
+            Sink[] sinks = data.getSinks();
+            HashMap<Edge, int[]> graphEdgeRoutes = data.getGraphEdgeRoutes();
+
+            // Make source shapefiles.
+            EsriPointList sourceList = new EsriPointList();
+            String[] sourceAttributeNames = {"Id", "X", "Y"};
+            int[] sourceAttributeDecimals = {0, 6, 6};
+            DbfTableModel sourceAttributeTable = new DbfTableModel(sourceAttributeNames.length);   //12
+            for (int colNum = 0; colNum < sourceAttributeNames.length; colNum++) {
+                sourceAttributeTable.setColumnName(colNum, sourceAttributeNames[colNum]);
+                sourceAttributeTable.setDecimalCount(colNum, (byte) sourceAttributeDecimals[colNum]);
+                sourceAttributeTable.setLength(colNum, 10);
+                if (sourceAttributeNames[colNum].equals("Id")) {
+                    sourceAttributeTable.setType(colNum, DbfTableModel.TYPE_CHARACTER);
+                } else {
+                    sourceAttributeTable.setType(colNum, DbfTableModel.TYPE_NUMERIC);
+                }
+            }
+            for (Source src : sources) {
+                EsriPoint source = new EsriPoint(data.cellToLatLon(src.getCellNum())[0], data.cellToLatLon(src.getCellNum())[1]);
+                sourceList.add(source);
+
+                // Add attributes.
+                ArrayList row = new ArrayList();
+                row.add(src.getLabel());
+                row.add(data.cellToLatLon(src.getCellNum())[1]);
+                row.add(data.cellToLatLon(src.getCellNum())[0]);
+
+                sourceAttributeTable.addRecord(row);
+            }
+
+            EsriShapeExport writeSourceShapefiles = new EsriShapeExport(sourceList, sourceAttributeTable, newDir.toString() + "/Sources");
+            writeSourceShapefiles.export();
+
+            // Make sink shapefiles.
+            EsriPointList sinkList = new EsriPointList();
+            String[] sinkAttributeNames = {"Id", "X", "Y"};
+            int[] sinkAttributeDecimals = {0, 6, 6};
+            DbfTableModel sinkAttributeTable = new DbfTableModel(sinkAttributeNames.length);   //12
+            for (int colNum = 0; colNum < sinkAttributeNames.length; colNum++) {
+                sinkAttributeTable.setColumnName(colNum, sinkAttributeNames[colNum]);
+                sinkAttributeTable.setDecimalCount(colNum, (byte) sinkAttributeDecimals[colNum]);
+                sinkAttributeTable.setLength(colNum, 10);
+                if (sinkAttributeNames[colNum].equals("Id")) {
+                    sinkAttributeTable.setType(colNum, DbfTableModel.TYPE_CHARACTER);
+                } else {
+                    sinkAttributeTable.setType(colNum, DbfTableModel.TYPE_NUMERIC);
+                }
+            }
+            for (Sink snk : sinks) {
+                EsriPoint source = new EsriPoint(data.cellToLatLon(snk.getCellNum())[0], data.cellToLatLon(snk.getCellNum())[1]);
+                sinkList.add(source);
+
+                // Add attributes.
+                ArrayList row = new ArrayList();
+                row.add(snk.getLabel());
+                row.add(data.cellToLatLon(snk.getCellNum())[1]);
+                row.add(data.cellToLatLon(snk.getCellNum())[0]);
+
+                sinkAttributeTable.addRecord(row);
+            }
+
+            EsriShapeExport writeSinkShapefiles = new EsriShapeExport(sinkList, sinkAttributeTable, newDir.toString() + "/Sinks");
+            writeSinkShapefiles.export();
+
+            // Make network shapefiles.
+            EsriPolylineList edgeList = new EsriPolylineList();
+            String[] edgeAttributeNames = {"Id"};
+            int[] edgeAttributeDecimals = {0};
+            DbfTableModel edgeAttributeTable = new DbfTableModel(edgeAttributeNames.length);   //12
+            for (int colNum = 0; colNum < edgeAttributeNames.length; colNum++) {
+                edgeAttributeTable.setColumnName(colNum, edgeAttributeNames[colNum]);
+                edgeAttributeTable.setDecimalCount(colNum, (byte) edgeAttributeDecimals[colNum]);
+                edgeAttributeTable.setLength(colNum, 10);
+                if (edgeAttributeNames[colNum].equals("Id")) {
+                    edgeAttributeTable.setType(colNum, DbfTableModel.TYPE_CHARACTER);
+                } else {
+                    edgeAttributeTable.setType(colNum, DbfTableModel.TYPE_NUMERIC);
+                }
+            }
+            for (Edge edg : graphEdgeRoutes.keySet()) {
+                // Build route
+                int[] route = graphEdgeRoutes.get(edg);
+                double[] routeLatLon = new double[route.length * 2];    // Route cells translated into: lat, lon, lat, lon,...
+                for (int i = 0; i < route.length; i++) {
+                    int cell = route[i];
+                    routeLatLon[i * 2] = data.cellToLatLon(cell)[0];
+                    routeLatLon[i * 2 + 1] = data.cellToLatLon(cell)[1];
+                }
+
+                EsriPolyline edge = new EsriPolyline(routeLatLon, OMGraphic.DECIMAL_DEGREES, OMGraphic.LINETYPE_STRAIGHT);
+                edgeList.add(edge);
+
+                // Add attributes.
+                ArrayList row = new ArrayList();
+                for (int i = 0; i < 1; i++) {
+                    row.add(0);
+                }
+                edgeAttributeTable.addRecord(row);
+            }
+
+            EsriShapeExport writeEdgeShapefiles = new EsriShapeExport(edgeList, edgeAttributeTable, newDir.toString() + "/Network");
+            writeEdgeShapefiles.export();
+        }
+    }
 
     public static void makeGenerateFile(String path, Solution soln) {
         File newDir = new File(path + "/genFiles");
