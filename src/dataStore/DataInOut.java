@@ -50,7 +50,7 @@ public class DataInOut {
         DataInOut.scenario = scenario;
         DataInOut.data = data;
 
-        System.out.println("Loading Geography...");
+        System.out.println("Loading Geography....");
         loadGeography();
         System.out.println("Loading Source Data...");
         loadSources();
