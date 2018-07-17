@@ -1,0 +1,3 @@
+17 Jul 2018 - Allow navigation to datasets (i.e. don't crash if jar file is not in same folder as "Datasets" folder).
+
+17 Jul 2018 - Make solution reader get project length from MPS file.
