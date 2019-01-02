@@ -262,14 +262,22 @@ public class DataStorer {
 
     public int getNeighborNum(int centerCell, int neighborCell) {
         // NOTE: Neighbor numbering starts in upper left as 0 and goes in clockwise direction.
-        if (neighborCell < centerCell - 1) {
-            return neighborCell - (centerCell - width - 1);
-        } else if (neighborCell > centerCell + 1) {
-            return 4 + (centerCell + width + 1) - neighborCell;
-        } else if (neighborCell == centerCell - 1) {
-            return 7;
+        if (neighborCell == centerCell - width - 1) {
+            return 0;
+        } else if (neighborCell == centerCell - width) {
+            return 1;
+        } else if (neighborCell == centerCell - width + 1) {
+            return 2;
         } else if (neighborCell == centerCell + 1) {
             return 3;
+        } else if (neighborCell == centerCell + width + 1) {
+            return 4;
+        } else if (neighborCell == centerCell + width) {
+            return 5;
+        } else if (neighborCell == centerCell + width - 1) {
+            return 6;
+        } else if (neighborCell == centerCell - 1) {
+            return 7;
         }
         return -1;
     }
