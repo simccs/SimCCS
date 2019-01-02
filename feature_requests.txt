@@ -1,0 +1,3 @@
+17 Jul 2018 - Display cost surface without image.
+
+17 Jul 2018 - Add additional models (tax / cost minimization, temporal, uncertainty).:
