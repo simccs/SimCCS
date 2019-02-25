@@ -17,7 +17,8 @@ import java.util.HashSet;
  */
 public class MPSWriter {
 
-    public static void writeMPS(String fileName, DataStorer data, double crf, double numYears, double capacityTarget, String basePath, String dataset, String scenario) {
+    public static void writeMPS(String fileName, DataStorer data, double crf, double numYears, double capacityTarget, String basePath, String dataset, String scenario, int modelVersion) {
+        //model version: 1 - cap, 2 - price.
         double pipeUtilization = .93;
 
         // Collect data
@@ -282,17 +283,21 @@ public class MPSWriter {
             //constraintRHS.put(constraint, 0.0);
         }
 
+        String constraint;
+        
         // Set amount of CO2 to capture
-        constraintCounter = 1;
-        String constraint = "G" + constraintCounter++;
-        for (Source src : sources) {
-            if (!contVariableToConstraints.containsKey(a[sourceCellToIndex.get(src)])) {
-                contVariableToConstraints.put(a[sourceCellToIndex.get(src)], new HashSet<ConstraintTerm>());
+        if (modelVersion == 1) {
+            constraintCounter = 1;
+             constraint = "G" + constraintCounter++;
+            for (Source src : sources) {
+                if (!contVariableToConstraints.containsKey(a[sourceCellToIndex.get(src)])) {
+                    contVariableToConstraints.put(a[sourceCellToIndex.get(src)], new HashSet<ConstraintTerm>());
+                }
+                contVariableToConstraints.get(a[sourceCellToIndex.get(src)]).add(new ConstraintTerm(constraint, 1));
             }
-            contVariableToConstraints.get(a[sourceCellToIndex.get(src)]).add(new ConstraintTerm(constraint, 1));
+            constraintToSign.put(constraint, "G");
+            constraintRHS.put(constraint, capacityTarget);
         }
-        constraintToSign.put(constraint, "G");
-        constraintRHS.put(constraint, capacityTarget);
 
         // Hardcode constants.
         contVariableToConstraints.put("captureTarget", new HashSet<ConstraintTerm>());
@@ -307,6 +312,10 @@ public class MPSWriter {
         contVariableToConstraints.get("projectLength").add(new ConstraintTerm("H3", 1));
         constraintToSign.put("H3", "E");
         constraintRHS.put("H3", numYears);
+        contVariableToConstraints.put("modelVersion", new HashSet<ConstraintTerm>());
+        contVariableToConstraints.get("modelVersion").add(new ConstraintTerm("H4", 1));
+        constraintToSign.put("H4", "E");
+        constraintRHS.put("H4", (double) modelVersion);
 
         // Make objective
         constraint = "OBJ";

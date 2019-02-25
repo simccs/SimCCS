@@ -50,7 +50,7 @@ public class DataInOut {
         DataInOut.scenario = scenario;
         DataInOut.data = data;
 
-        System.out.println("Loading Geography....");
+        System.out.println("Loading Geography...");
         loadGeography();
         System.out.println("Loading Source Data...");
         loadSources();
@@ -503,8 +503,6 @@ public class DataInOut {
                         soln.addSinkStorageAmount(sinks[Integer.parseInt(components[1])], Double.parseDouble(variable[2]));
                     } else if (components[0].equals("p")) {
                         soln.addEdgeTransportAmount(new Edge(vertexIndexToCell.get(Integer.parseInt(components[1])), vertexIndexToCell.get(Integer.parseInt(components[2]))), Double.parseDouble(variable[2]));
-                    } else if (variable[0].equals("captureTarget")) {
-                        soln.setTargetCaptureAmountPerYear(Double.parseDouble(variable[2]));
                     } else if (variable[0].equals("crf")) {
                         soln.setCRF(Double.parseDouble(variable[2]));
                     } else if (variable[0].equals("projectLength")) {

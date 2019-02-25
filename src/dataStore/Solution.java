@@ -21,7 +21,7 @@ public class Solution {
     private HashMap<Edge, Double> edgeCosts;
     
     // Other.
-    private double targetCaptureAmountPerYear;
+    private double captureAmountPerYear;
     private int projectLength;
     private double crf;
     
@@ -39,6 +39,7 @@ public class Solution {
             sourceCaptureAmounts.put(src, 0.0);
         }
         sourceCaptureAmounts.put(src, sourceCaptureAmounts.get(src) + captureAmount);
+        captureAmountPerYear += captureAmount;
     }
     
     public void addSourceCostComponent(Source src, double cost) {
@@ -100,9 +101,9 @@ public class Solution {
         this.edgeCosts = edgeCosts;
     }
     
-    public void setTargetCaptureAmountPerYear(double targetCaptureAmount) {
-        this.targetCaptureAmountPerYear = targetCaptureAmount;
-    }
+    //public void setTargetCaptureAmountPerYear(double targetCaptureAmount) {
+    //    this.targetCaptureAmountPerYear = targetCaptureAmount;
+    //}
     
     public void setProjectLength(int projectLength) {
         this.projectLength = projectLength;
@@ -156,8 +157,8 @@ public class Solution {
         return sinkStorageAmounts.keySet().size();
     }
     
-    public double getTargetCaptureAmount() {
-        return targetCaptureAmountPerYear * projectLength;
+    public double getCaptureAmount() {
+        return captureAmountPerYear * projectLength;
     }
     
     public int getNumEdgesOpened() {
@@ -181,7 +182,7 @@ public class Solution {
     }
     
     public double getUnitCaptureCost() {
-        return getTotalCaptureCost() / (targetCaptureAmountPerYear * projectLength);
+        return getTotalCaptureCost() / (captureAmountPerYear * projectLength);
     }
     
     public double getTotalStorageCost() {
@@ -193,7 +194,7 @@ public class Solution {
     }
     
     public double getUnitStorageCost() {
-        return getTotalStorageCost() / (targetCaptureAmountPerYear * projectLength);
+        return getTotalStorageCost() / (captureAmountPerYear * projectLength);
     }
     
     public double getTotalTransportCost() {
@@ -205,7 +206,7 @@ public class Solution {
     }
     
     public double getUnitTransportCost() {
-        return getTotalTransportCost() / (targetCaptureAmountPerYear * projectLength);
+        return getTotalTransportCost() / (captureAmountPerYear * projectLength);
     }
 
     public double getTotalCost() {

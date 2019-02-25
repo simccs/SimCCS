@@ -398,22 +398,55 @@ public class Gui extends Application {
         capValue.setLayoutX(143);
         capValue.setLayoutY(64);
         formulationPane.getChildren().add(capValue);
+        
+        RadioButton capVersion = new RadioButton("Cap");
+        RadioButton priceVersion = new RadioButton("Price");
+        capVersion.setLayoutX(5);
+        capVersion.setLayoutY(94);
+        formulationPane.getChildren().add(capVersion);
+        capVersion.setSelected(true);
+        capVersion.selectedProperty().addListener(new ChangeListener<Boolean>() {
+            @Override
+            public void changed(ObservableValue<? extends Boolean> selected, Boolean oldVal, Boolean show) {
+                if (!oldVal) {
+                    priceVersion.setSelected(false);
+                }
+            }
+        });
+        
+        priceVersion.setLayoutX(60);
+        priceVersion.setLayoutY(94);
+        formulationPane.getChildren().add(priceVersion);
+        priceVersion.selectedProperty().addListener(new ChangeListener<Boolean>() {
+            @Override
+            public void changed(ObservableValue<? extends Boolean> selected, Boolean oldVal, Boolean show) {
+                if (!oldVal) {
+                    capVersion.setSelected(false);
+                }
+            }
+        });
 
         Button generateSolutionFile = new Button("Generate MPS File");
         generateSolutionFile.setLayoutX(25);
-        generateSolutionFile.setLayoutY(94);
+        generateSolutionFile.setLayoutY(120);
         formulationPane.getChildren().add(generateSolutionFile);
         generateSolutionFile.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent e) {
-                controlActions.generateMPSFile(crfValue.getText(), yearValue.getText(), capValue.getText());
+                int modelVersion = 0;
+                if (capVersion.isSelected()) {
+                    modelVersion = 1;
+                } else if (priceVersion.isSelected()) {
+                    modelVersion = 2;
+                }
+                controlActions.generateMPSFile(crfValue.getText(), yearValue.getText(), capValue.getText(), modelVersion);
             }
         });
 
         // Populate model pane.
         TitledPane modelContainer = new TitledPane("Problem Formulation", formulationPane);
         modelContainer.setCollapsible(false);
-        modelContainer.setPrefSize(192, 152);
+        modelContainer.setPrefSize(192, 175);
         modelContainer.setLayoutX(14);
         modelContainer.setLayoutY(5);
         modelPane.getChildren().add(modelContainer);
@@ -450,7 +483,7 @@ public class Gui extends Application {
         solutionContainer.setCollapsible(false);
         solutionContainer.setPrefSize(192, 97);
         solutionContainer.setLayoutX(14);
-        solutionContainer.setLayoutY(162);
+        solutionContainer.setLayoutY(185);
         modelPane.getChildren().add(solutionContainer);
 
         // Populate results pane.

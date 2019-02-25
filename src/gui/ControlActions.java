@@ -252,10 +252,10 @@ public class ControlActions {
         }
     }
 
-    public void generateMPSFile(String crf, String numYears, String capacityTarget) {
+    public void generateMPSFile(String crf, String numYears, String capacityTarget, int modelVersion) {
         if (scenario != "") {
             System.out.println("Writing MPS File...");
-            MPSWriter.writeMPS("mip.mps", data, Double.parseDouble(crf), Double.parseDouble(numYears), Double.parseDouble(capacityTarget), basePath, dataset, scenario);
+            MPSWriter.writeMPS("mip.mps", data, Double.parseDouble(crf), Double.parseDouble(numYears), Double.parseDouble(capacityTarget), basePath, dataset, scenario, modelVersion);
         }
     }
 
@@ -456,7 +456,7 @@ public class ControlActions {
         }
     }
 
-    public void generateMPSFiles(String crf, String numYears, String capacityTarget) {
+    public void generateMPSFiles(String crf, String numYears, String capacityTarget, int modelVersion) {
         Random r = new Random();
 
         Source[] sources = data.getSources();
@@ -480,7 +480,7 @@ public class ControlActions {
             // sink capacity.
             // injection cost.
             // STDDEV = 1/4 mean
-            MPSWriter.writeMPS("mip" + i + ".mps", data, Double.parseDouble(crf), Double.parseDouble(numYears), Double.parseDouble(capacityTarget), basePath, dataset, scenario);
+            MPSWriter.writeMPS("mip" + i + ".mps", data, Double.parseDouble(crf), Double.parseDouble(numYears), Double.parseDouble(capacityTarget), basePath, dataset, scenario, modelVersion);
         }
         for (int j = 0; j < sinks.length; j++) {
             sinks[j].setCapacity(sinkCapacity[j]);
@@ -596,7 +596,7 @@ public class ControlActions {
                 // Update solution values.
                 solutionValues[0].setText(Integer.toString(soln.getNumOpenedSources()));
                 solutionValues[1].setText(Integer.toString(soln.getNumOpenedSinks()));
-                solutionValues[2].setText(Double.toString(round(soln.getTargetCaptureAmount(), 2)));
+                solutionValues[2].setText(Double.toString(round(soln.getCaptureAmount(), 2)));
                 solutionValues[3].setText(Integer.toString(soln.getNumEdgesOpened()));
                 solutionValues[4].setText(Integer.toString(soln.getProjectLength()));
                 solutionValues[5].setText(Double.toString(round(soln.getTotalCaptureCost(), 2)));
