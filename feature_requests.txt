@@ -1,3 +1,7 @@
 17 Jul 2018 - Display cost surface without image.
 
 17 Jul 2018 - Add additional models (tax / cost minimization, temporal, uncertainty).:
+
+5 Mar 19 - Export solution in relevant csv file format.
+
+5 Mar 19 - Run jar file with sufficient memory.
