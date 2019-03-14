@@ -156,7 +156,7 @@ public class DataStorer {
         return graphEdgeCosts;
     }
 
-    public HashMap<Edge, Double> getGraphEdgeRightOfWawCosts() {
+    public HashMap<Edge, Double> getGraphEdgeRightOfWayCosts() {
         if (graphEdgeRightOfWayCosts == null) {
             generateCandidateGraph();
         }
@@ -487,6 +487,14 @@ public class DataStorer {
 
     public void setGraphEdgeCosts(HashMap<Edge, Double> edgeCosts) {
         graphEdgeCosts = edgeCosts;
+    }
+    
+    public void setGraphEdgeConstructionCosts(HashMap<Edge, Double> constructionCosts) {
+        graphEdgeConstructionCosts = constructionCosts;
+    }
+    
+    public void setGraphEdgeRightOfWayCosts(HashMap<Edge, Double> rowCosts) {
+        graphEdgeRightOfWayCosts = rowCosts;
     }
 
     public void setGraphEdgeRoutes(HashMap<Edge, int[]> edgeRoutes) {

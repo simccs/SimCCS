@@ -31,7 +31,7 @@ public class MPSWriter {
 
         HashMap<Edge, Double> edgeCosts = data.getGraphEdgeCosts();
         HashMap<Edge, Double> edgeConstructionCosts = data.getGraphEdgeConstructionCosts();
-        HashMap<Edge, Double> edgeRightOfWayCosts = data.getGraphEdgeRightOfWawCosts();
+        HashMap<Edge, Double> edgeRightOfWayCosts = data.getGraphEdgeRightOfWayCosts();
         HashMap<Source, Integer> sourceCellToIndex = new HashMap<>();
         HashMap<Integer, Source> sourceIndexToCell = new HashMap<>();
         HashMap<Sink, Integer> sinkCellToIndex = new HashMap<>();
