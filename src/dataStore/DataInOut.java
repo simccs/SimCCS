@@ -634,6 +634,7 @@ public class DataInOut {
 
             EsriShapeExport writeSourceShapefiles = new EsriShapeExport(sourceList, sourceAttributeTable, newDir.toString() + "/Sources");
             writeSourceShapefiles.export();
+            makeProjectionFile("Sources", newDir.toString());
 
             // Make sink shapefiles.
             EsriPointList sinkList = new EsriPointList();
@@ -677,6 +678,7 @@ public class DataInOut {
 
             EsriShapeExport writeSinkShapefiles = new EsriShapeExport(sinkList, sinkAttributeTable, newDir.toString() + "/Sinks");
             writeSinkShapefiles.export();
+            makeProjectionFile("Sinks", newDir.toString());
 
             // Make network shapefiles.
             EsriPolylineList edgeList = new EsriPolylineList();
@@ -721,10 +723,11 @@ public class DataInOut {
 
             EsriShapeExport writeEdgeShapefiles = new EsriShapeExport(edgeList, edgeAttributeTable, newDir.toString() + "/Network");
             writeEdgeShapefiles.export();
+            makeProjectionFile("Network", newDir.toString());
         }
     }
     
-        public static void makeCandidateShapeFiles(String path) {
+    public static void makeCandidateShapeFiles(String path) {
         // Make shapefiles if they do not already exist.
         File newDir = new File(path + "/shapeFiles/");
         if (!newDir.exists()) {
@@ -765,6 +768,7 @@ public class DataInOut {
 
             EsriShapeExport writeSourceShapefiles = new EsriShapeExport(sourceList, sourceAttributeTable, newDir.toString() + "/Sources");
             writeSourceShapefiles.export();
+            makeProjectionFile("Sources", newDir.toString());
 
             // Make sink shapefiles.
             EsriPointList sinkList = new EsriPointList();
@@ -796,6 +800,7 @@ public class DataInOut {
 
             EsriShapeExport writeSinkShapefiles = new EsriShapeExport(sinkList, sinkAttributeTable, newDir.toString() + "/Sinks");
             writeSinkShapefiles.export();
+            makeProjectionFile("Sinks", newDir.toString());
 
             // Make network shapefiles.
             EsriPolylineList edgeList = new EsriPolylineList();
@@ -835,7 +840,17 @@ public class DataInOut {
 
             EsriShapeExport writeEdgeShapefiles = new EsriShapeExport(edgeList, edgeAttributeTable, newDir.toString() + "/Network");
             writeEdgeShapefiles.export();
+            makeProjectionFile("Network", newDir.toString());
         }
+    }
+    
+    public static void makeProjectionFile(String name, String path){
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(new File(path, name + ".prj")))) {
+            bw.write("GEOGCS[\"GCS_North_American_1983\",DATUM[\"D_North_American_1983\",SPHEROID[\"GRS_1980\",6378137.0,298.257222101]],PRIMEM[\"Greenwich\",0.0],UNIT[\"Degree\",0.0174532925199433]]");
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+        }
+        
     }
 
     public static void makeGenerateFile(String path, Solution soln) {
