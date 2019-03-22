@@ -611,6 +611,7 @@ public class ControlActions {
                 // Write to shapefiles.
                 DataInOut.makeShapeFiles(basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + file, soln);
                 DataInOut.makeCandidateShapeFiles(basePath + "/" + dataset + "/Scenarios/" + scenario);
+                DataInOut.makeSolutionFile(basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + file, soln);
 
                 //determineROW(soln, basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + file);
             }

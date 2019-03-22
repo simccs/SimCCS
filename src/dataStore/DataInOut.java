@@ -852,6 +852,38 @@ public class DataInOut {
         }
         
     }
+    
+    public static void makeSolutionFile(String path, Solution soln) {
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(new File(path, "solution.csv")))) {
+            bw.write("Project Length," + soln.getProjectLength() + "\n");
+            bw.write("CRF," + soln.getCRF() + "\n");
+            bw.write("Annual Capture Amount (MTCO2/yr)," + soln.getAnnualCaptureAmount() + "\n");
+            bw.write("Total Cost ($M/yr)," + soln.getTotalCost() + "\n");
+            bw.write("Capture Cost ($M/yr)," + soln.getTotalCaptureCost() + "\n");
+            bw.write("Transport Cost ($M/yr)," + soln.getTotalTransportCost() + "\n");
+            bw.write("Storage Cost ($M/yr)," + soln.getTotalStorageCost() + "\n\n");
+            bw.write("Source,Capture Amount (MTCO2/yr),Capture Cost ($M/yr)\n");
+            HashMap<Source, Double> sourceCaptureAmounts = soln.getSourceCaptureAmounts();
+            HashMap<Source, Double> sourceCosts = soln.getSourceCosts();
+            for (Source src : sourceCaptureAmounts.keySet()) {
+                bw.write(src.getLabel() + ",");
+                bw.write(sourceCaptureAmounts.get(src) + ",");
+                bw.write(sourceCosts.get(src) + "\n");
+            }
+            bw.write("\n");
+            
+            bw.write("Sink,Storage Amount (MTCO2/yr),Storage Cost ($M/yr)\n");
+            HashMap<Sink, Double> sinkStorageAmounts = soln.getSinkStorageAmounts();
+            HashMap<Sink, Double> sinkCosts = soln.getSinkCosts();
+            for (Sink snk : sinkStorageAmounts.keySet()) {
+                bw.write(snk.getLabel() + ",");
+                bw.write(sinkStorageAmounts.get(snk) + ",");
+                bw.write(sinkCosts.get(snk) + "\n");
+            }
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+        }
+    }
 
     public static void makeGenerateFile(String path, Solution soln) {
         File newDir = new File(path + "/genFiles");

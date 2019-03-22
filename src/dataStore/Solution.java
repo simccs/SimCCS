@@ -161,6 +161,10 @@ public class Solution {
         return captureAmountPerYear * projectLength;
     }
     
+    public double getAnnualCaptureAmount() {
+        return captureAmountPerYear;
+    }
+    
     public int getNumEdgesOpened() {
         return edgeTransportAmounts.keySet().size();
     }
