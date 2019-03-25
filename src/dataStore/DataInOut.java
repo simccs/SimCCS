@@ -32,6 +32,7 @@ import java.nio.file.StandardCopyOption;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.TreeMap;
 
 /**
  *
@@ -351,7 +352,7 @@ public class DataInOut {
                     data.setGraphEdgeConstructionCosts(graphEdgeConstructionCosts);
                     data.setGraphEdgeRightOfWayCosts(graphEdgeRightOfWayCosts);
                 }
-                
+
                 System.out.println();
             } catch (IOException e) {
                 System.out.println(e.getMessage());
@@ -607,29 +608,41 @@ public class DataInOut {
                     sourceAttributeTable.setType(colNum, DbfTableModel.TYPE_NUMERIC);
                 }
             }
+
+            // Order sources.
+            TreeMap<Double, ArrayList<Source>> orderedSources = new TreeMap<>();
             for (Source src : sources) {
-                EsriPoint source = new EsriPoint(data.cellToLatLon(src.getCellNum())[0], data.cellToLatLon(src.getCellNum())[1]);
-                sourceList.add(source);
-
-                // Add attributes.
-                ArrayList row = new ArrayList();
-                row.add(src.getLabel());
-                row.add(data.cellToLatLon(src.getCellNum())[1]);
-                row.add(data.cellToLatLon(src.getCellNum())[0]);
-                if (sourceCaptureAmounts.containsKey(src)) {
-                    row.add(sourceCaptureAmounts.get(src));
-                    row.add(src.getProductionRate());
-                    row.add(src.getProductionRate() - sourceCaptureAmounts.get(src));
-                } else {
-                    row.add(0);
-                    row.add(src.getProductionRate());
-                    row.add(src.getProductionRate());
+                if (orderedSources.get(-src.getProductionRate()) == null) {
+                    orderedSources.put(-src.getProductionRate(), new ArrayList<Source>());
                 }
-                for (int i = 0; i < 6; i++) {
-                    row.add(0);
-                }
+                orderedSources.get(-src.getProductionRate()).add(src);
+            }
 
-                sourceAttributeTable.addRecord(row);
+            for (ArrayList<Source> sameCapSources : orderedSources.values()) {
+                for (Source src : sameCapSources) {
+                    EsriPoint source = new EsriPoint(data.cellToLatLon(src.getCellNum())[0], data.cellToLatLon(src.getCellNum())[1]);
+                    sourceList.add(source);
+
+                    // Add attributes.
+                    ArrayList row = new ArrayList();
+                    row.add(src.getLabel());
+                    row.add(data.cellToLatLon(src.getCellNum())[1]);
+                    row.add(data.cellToLatLon(src.getCellNum())[0]);
+                    if (sourceCaptureAmounts.containsKey(src)) {
+                        row.add(sourceCaptureAmounts.get(src));
+                        row.add(src.getProductionRate());
+                        row.add(src.getProductionRate() - sourceCaptureAmounts.get(src));
+                    } else {
+                        row.add(0);
+                        row.add(src.getProductionRate());
+                        row.add(src.getProductionRate());
+                    }
+                    for (int i = 0; i < 6; i++) {
+                        row.add(0);
+                    }
+
+                    sourceAttributeTable.addRecord(row);
+                }
             }
 
             EsriShapeExport writeSourceShapefiles = new EsriShapeExport(sourceList, sourceAttributeTable, newDir.toString() + "/Sources");
@@ -651,29 +664,41 @@ public class DataInOut {
                     sinkAttributeTable.setType(colNum, DbfTableModel.TYPE_NUMERIC);
                 }
             }
+
+            // Order sinks.
+            TreeMap<Double, ArrayList<Sink>> orderedSinks = new TreeMap<>();
             for (Sink snk : sinks) {
-                EsriPoint source = new EsriPoint(data.cellToLatLon(snk.getCellNum())[0], data.cellToLatLon(snk.getCellNum())[1]);
-                sinkList.add(source);
-
-                // Add attributes.
-                ArrayList row = new ArrayList();
-                row.add(snk.getLabel());
-                row.add(data.cellToLatLon(snk.getCellNum())[1]);
-                row.add(data.cellToLatLon(snk.getCellNum())[0]);
-                if (sinkStorageAmounts.containsKey(snk)) {
-                    row.add(sinkStorageAmounts.get(snk));
-                    row.add(snk.getCapacity() / soln.getProjectLength());
-                    row.add(snk.getCapacity() / soln.getProjectLength() - sinkStorageAmounts.get(snk));
-                } else {
-                    row.add(0);
-                    row.add(snk.getCapacity() / soln.getProjectLength());
-                    row.add(snk.getCapacity() / soln.getProjectLength());
+                if (orderedSinks.get(-snk.getCapacity()) == null) {
+                    orderedSinks.put(-snk.getCapacity(), new ArrayList<Sink>());
                 }
-                for (int i = 0; i < 6; i++) {
-                    row.add(0);
-                }
+                orderedSinks.get(-snk.getCapacity()).add(snk);
+            }
 
-                sinkAttributeTable.addRecord(row);
+            for (ArrayList<Sink> sameCapSinks : orderedSinks.values()) {
+                for (Sink snk : sameCapSinks) {
+                    EsriPoint source = new EsriPoint(data.cellToLatLon(snk.getCellNum())[0], data.cellToLatLon(snk.getCellNum())[1]);
+                    sinkList.add(source);
+
+                    // Add attributes.
+                    ArrayList row = new ArrayList();
+                    row.add(snk.getLabel());
+                    row.add(data.cellToLatLon(snk.getCellNum())[1]);
+                    row.add(data.cellToLatLon(snk.getCellNum())[0]);
+                    if (sinkStorageAmounts.containsKey(snk)) {
+                        row.add(sinkStorageAmounts.get(snk));
+                        row.add(snk.getCapacity() / soln.getProjectLength());
+                        row.add(snk.getCapacity() / soln.getProjectLength() - sinkStorageAmounts.get(snk));
+                    } else {
+                        row.add(0);
+                        row.add(snk.getCapacity() / soln.getProjectLength());
+                        row.add(snk.getCapacity() / soln.getProjectLength());
+                    }
+                    for (int i = 0; i < 6; i++) {
+                        row.add(0);
+                    }
+
+                    sinkAttributeTable.addRecord(row);
+                }
             }
 
             EsriShapeExport writeSinkShapefiles = new EsriShapeExport(sinkList, sinkAttributeTable, newDir.toString() + "/Sinks");
@@ -726,7 +751,7 @@ public class DataInOut {
             makeProjectionFile("Network", newDir.toString());
         }
     }
-    
+
     public static void makeCandidateShapeFiles(String path) {
         // Make shapefiles if they do not already exist.
         File newDir = new File(path + "/shapeFiles/");
@@ -753,17 +778,29 @@ public class DataInOut {
                     sourceAttributeTable.setType(colNum, DbfTableModel.TYPE_NUMERIC);
                 }
             }
+
+            // Order sources.
+            TreeMap<Double, ArrayList<Source>> orderedSources = new TreeMap<>();
             for (Source src : sources) {
-                EsriPoint source = new EsriPoint(data.cellToLatLon(src.getCellNum())[0], data.cellToLatLon(src.getCellNum())[1]);
-                sourceList.add(source);
+                if (orderedSources.get(-src.getProductionRate()) == null) {
+                    orderedSources.put(-src.getProductionRate(), new ArrayList<Source>());
+                }
+                orderedSources.get(-src.getProductionRate()).add(src);
+            }
 
-                // Add attributes.
-                ArrayList row = new ArrayList();
-                row.add(src.getLabel());
-                row.add(data.cellToLatLon(src.getCellNum())[1]);
-                row.add(data.cellToLatLon(src.getCellNum())[0]);
+            for (ArrayList<Source> sameCapSources : orderedSources.values()) {
+                for (Source src : sameCapSources) {
+                    EsriPoint source = new EsriPoint(data.cellToLatLon(src.getCellNum())[0], data.cellToLatLon(src.getCellNum())[1]);
+                    sourceList.add(source);
 
-                sourceAttributeTable.addRecord(row);
+                    // Add attributes.
+                    ArrayList row = new ArrayList();
+                    row.add(src.getLabel());
+                    row.add(data.cellToLatLon(src.getCellNum())[1]);
+                    row.add(data.cellToLatLon(src.getCellNum())[0]);
+
+                    sourceAttributeTable.addRecord(row);
+                }
             }
 
             EsriShapeExport writeSourceShapefiles = new EsriShapeExport(sourceList, sourceAttributeTable, newDir.toString() + "/Sources");
@@ -785,17 +822,29 @@ public class DataInOut {
                     sinkAttributeTable.setType(colNum, DbfTableModel.TYPE_NUMERIC);
                 }
             }
+
+            // Order sinks.
+            TreeMap<Double, ArrayList<Sink>> orderedSinks = new TreeMap<>();
             for (Sink snk : sinks) {
-                EsriPoint source = new EsriPoint(data.cellToLatLon(snk.getCellNum())[0], data.cellToLatLon(snk.getCellNum())[1]);
-                sinkList.add(source);
+                if (orderedSinks.get(-snk.getCapacity()) == null) {
+                    orderedSinks.put(-snk.getCapacity(), new ArrayList<Sink>());
+                }
+                orderedSinks.get(-snk.getCapacity()).add(snk);
+            }
 
-                // Add attributes.
-                ArrayList row = new ArrayList();
-                row.add(snk.getLabel());
-                row.add(data.cellToLatLon(snk.getCellNum())[1]);
-                row.add(data.cellToLatLon(snk.getCellNum())[0]);
+            for (ArrayList<Sink> sameCapSinks : orderedSinks.values()) {
+                for (Sink snk : sameCapSinks) {
+                    EsriPoint source = new EsriPoint(data.cellToLatLon(snk.getCellNum())[0], data.cellToLatLon(snk.getCellNum())[1]);
+                    sinkList.add(source);
 
-                sinkAttributeTable.addRecord(row);
+                    // Add attributes.
+                    ArrayList row = new ArrayList();
+                    row.add(snk.getLabel());
+                    row.add(data.cellToLatLon(snk.getCellNum())[1]);
+                    row.add(data.cellToLatLon(snk.getCellNum())[0]);
+
+                    sinkAttributeTable.addRecord(row);
+                }
             }
 
             EsriShapeExport writeSinkShapefiles = new EsriShapeExport(sinkList, sinkAttributeTable, newDir.toString() + "/Sinks");
@@ -843,16 +892,16 @@ public class DataInOut {
             makeProjectionFile("Network", newDir.toString());
         }
     }
-    
-    public static void makeProjectionFile(String name, String path){
+
+    public static void makeProjectionFile(String name, String path) {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(new File(path, name + ".prj")))) {
             bw.write("GEOGCS[\"GCS_North_American_1983\",DATUM[\"D_North_American_1983\",SPHEROID[\"GRS_1980\",6378137.0,298.257222101]],PRIMEM[\"Greenwich\",0.0],UNIT[\"Degree\",0.0174532925199433]]");
         } catch (IOException e) {
             System.out.println(e.getMessage());
         }
-        
+
     }
-    
+
     public static void makeSolutionFile(String path, Solution soln) {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(new File(path, "solution.csv")))) {
             bw.write("Project Length," + soln.getProjectLength() + "\n");
@@ -871,7 +920,7 @@ public class DataInOut {
                 bw.write(sourceCosts.get(src) + "\n");
             }
             bw.write("\n");
-            
+
             bw.write("Sink,Storage Amount (MTCO2/yr),Storage Cost ($M/yr)\n");
             HashMap<Sink, Double> sinkStorageAmounts = soln.getSinkStorageAmounts();
             HashMap<Sink, Double> sinkCosts = soln.getSinkCosts();
@@ -954,15 +1003,15 @@ public class DataInOut {
         try {
             URL url = new URL(urlPath);
             connection = (HttpURLConnection) url.openConnection();
-            
+
             DateFormat dateFormat = new SimpleDateFormat("ddMMyyy-HHmmssss");
             Date date = new Date();
             String run = "run" + dateFormat.format(date);
-            
+
             String directoryPath = basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + run;
             File directory = new File(directoryPath);
             directory.mkdir();
-            
+
             // Copy MPS file into results file.
             String mipPath = basePath + "/" + dataset + "/Scenarios/" + scenario + "/MIP/mip.mps";
             Path from = Paths.get(mipPath);
