@@ -420,6 +420,14 @@ public class DataStorer {
     public double[][] getModifiedAdjacencyCosts() {
         return modifiedAdjacencyCosts;
     }
+    
+    public double getMaxAnnualCapturable() {
+        double maxCap = 0;
+        for (Source src : sources) {
+            maxCap += src.getProductionRate();
+        }
+        return maxCap;
+    }
 
     // Data element set methods
     public void setWidth(int width) {

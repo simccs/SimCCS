@@ -136,7 +136,7 @@ public class MPSWriter {
                     contVariableToConstraints.get(p[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c]).add(new ConstraintTerm(constraint, 1));
 
                     // Get max pipeline capacity.
-                    double maxCap = Double.MAX_VALUE;
+                    double maxCap = data.getMaxAnnualCapturable();
                     if (c < linearComponents.length - 1) {
                         double alpha1 = linearComponents[c].getConAlpha() + linearComponents[c].getRowAlpha();
                         double beta1 = linearComponents[c].getConBeta() + linearComponents[c].getRowBeta();
