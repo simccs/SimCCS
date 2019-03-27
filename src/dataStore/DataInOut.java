@@ -929,6 +929,16 @@ public class DataInOut {
                 bw.write(sinkStorageAmounts.get(snk) + ",");
                 bw.write(sinkCosts.get(snk) + "\n");
             }
+            bw.write("\n");
+            
+            bw.write("Edge Source,Edge Sink,Amount (MTCO2/yr),Transport Cost ($M/yr)\n");
+            HashMap<Edge, Double> edgeTransportAmounts = soln.getEdgeTransportAmounts();
+            HashMap<Edge, Double> edgeCosts = soln.getEdgeCosts();
+            for (Edge edg : edgeTransportAmounts.keySet()) {
+                bw.write(edg.v1 + "," + edg.v2 + ",");
+                bw.write(edgeTransportAmounts.get(edg) + ",");
+                bw.write(edgeCosts.get(edg) + "\n");
+            }
         } catch (IOException e) {
             System.out.println(e.getMessage());
         }
