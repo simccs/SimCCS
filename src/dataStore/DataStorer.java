@@ -86,9 +86,11 @@ public class DataStorer {
         loadNetworkCosts();
 
         Object[] pathDetails = solver.generateAllPairShortestPaths();
-        shortestPaths = (int[][]) pathDetails[0];
-        shortestPathCosts = (double[]) pathDetails[1];
-        DataInOut.saveShortestPathsNetwork();
+        if (pathDetails != null) {
+            shortestPaths = (int[][]) pathDetails[0];
+            shortestPathCosts = (double[]) pathDetails[1];
+            DataInOut.saveShortestPathsNetwork();
+        }
     }
 
     public void generateDelaunayPairs() {
@@ -101,16 +103,18 @@ public class DataStorer {
         generateDelaunayPairs();
 
         Object[] graphComponents = solver.generateDelaunayCandidateGraph();
-        graphVertices = (int[]) graphComponents[0];
-        graphEdgeCosts = (HashMap<Edge, Double>) graphComponents[1];
-        graphEdgeRoutes = (HashMap<Edge, int[]>) graphComponents[2];
+        if (graphComponents != null) {
+            graphVertices = (int[]) graphComponents[0];
+            graphEdgeCosts = (HashMap<Edge, Double>) graphComponents[1];
+            graphEdgeRoutes = (HashMap<Edge, int[]>) graphComponents[2];
 
-        // Make right of way and construction costs
-        Object[] costComponents = solver.makeComponentCosts();
-        graphEdgeRightOfWayCosts = (HashMap<Edge, Double>) costComponents[0];
-        graphEdgeConstructionCosts = (HashMap<Edge, Double>) costComponents[1];
-        
-        DataInOut.saveCandidateGraph();
+            // Make right of way and construction costs
+            Object[] costComponents = solver.makeComponentCosts();
+            graphEdgeRightOfWayCosts = (HashMap<Edge, Double>) costComponents[0];
+            graphEdgeConstructionCosts = (HashMap<Edge, Double>) costComponents[1];
+
+            DataInOut.saveCandidateGraph();
+        }
     }
 
     public void loadNetworkCosts() {
@@ -420,7 +424,7 @@ public class DataStorer {
     public double[][] getModifiedAdjacencyCosts() {
         return modifiedAdjacencyCosts;
     }
-    
+
     public double getMaxAnnualCapturable() {
         double maxCap = 0;
         for (Source src : sources) {
@@ -497,11 +501,11 @@ public class DataStorer {
     public void setGraphEdgeCosts(HashMap<Edge, Double> edgeCosts) {
         graphEdgeCosts = edgeCosts;
     }
-    
+
     public void setGraphEdgeConstructionCosts(HashMap<Edge, Double> constructionCosts) {
         graphEdgeConstructionCosts = constructionCosts;
     }
-    
+
     public void setGraphEdgeRightOfWayCosts(HashMap<Edge, Double> rowCosts) {
         graphEdgeRightOfWayCosts = rowCosts;
     }
