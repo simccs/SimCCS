@@ -1,4 +1,4 @@
-0	1	2	3	4	5	6	7	8	9	10	11	12	13	14	15	16
+Sink_ID	NAME	fieldCap (MtCO2)	costFix ($M)	fixO&M ($M/yr)	wellCap (MtCO2/yr)	wellCostFix ($M)	wellFixO&M ($M/yr)	varO&M ($/tCO2)	N/A	LON	LAT	N/A N/A N/A N/A Location
 1	1	379	40.951	0.000	0.375	4.575	0.175	2.61	0	-91.2980	28.9920	0	0	0	0	Gulf offshore
 2	2	379	40.951	0.000	0.375	4.575	0.175	2.61	0	-91.1764	31.5559	0	0	0	0	Cranfield
 3	3	360	63.063	0.000	0.180	3.859	0.201	3.02	0	-88.5068	30.5078	0	0	0	0	Escatawpa
