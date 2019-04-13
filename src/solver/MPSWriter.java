@@ -22,14 +22,12 @@ public class MPSWriter {
         double pipeUtilization = .93;
 
         // Collect data
-        data.loadNetworkCosts();
         Source[] sources = data.getSources();
         Sink[] sinks = data.getSinks();
         LinearComponent[] linearComponents = data.getLinearComponents();
         int[] graphVertices = data.getGraphVertices();
         HashMap<Integer, HashSet<Integer>> neighbors = data.getGraphNeighbors();
 
-        HashMap<Edge, Double> edgeCosts = data.getGraphEdgeCosts();
         HashMap<Edge, Double> edgeConstructionCosts = data.getGraphEdgeConstructionCosts();
         HashMap<Edge, Double> edgeRightOfWayCosts = data.getGraphEdgeRightOfWayCosts();
         HashMap<Source, Integer> sourceCellToIndex = new HashMap<>();
