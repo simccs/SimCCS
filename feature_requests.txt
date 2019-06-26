@@ -5,3 +5,5 @@
 5 Mar 19 - Export solution in relevant csv file format.
 
 5 Mar 19 - Run jar file with sufficient memory.
+
+26 Jun 19 - Allow more varried file names (issue with running cplex when there are spaces in file names).
