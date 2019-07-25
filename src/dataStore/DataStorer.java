@@ -20,7 +20,7 @@ public class DataStorer {
     private Solver solver;
 
     // Geospatial data.
-    private int width;
+    private int width;  // Number of columns
     private int height;
     private double lowerLeftX;
     private double lowerLeftY;
@@ -217,9 +217,10 @@ public class DataStorer {
         return Double.MAX_VALUE;
     }
 
+    // Cell number to column number, row number. (column and row numbering start at 1)
     public double[] cellLocationToRawXY(int cell) {
         // NOTE: Cell counting starts at 1, not 0.
-        int y = cell / width + 1;
+        int y = (cell - 1) / width + 1;
         int x = cell - (y - 1) * width;
         return new double[]{x, y};
     }
