@@ -115,7 +115,7 @@ public class DataInOut {
             rightOfWayCosts = new double[data.getWidth() * data.getHeight() + 1][8];
             constructionCosts = new double[data.getWidth() * data.getHeight() + 1][8];
             for (int i = 0; i < adjacencyCosts.length; i++) {
-                for (int j = 0; j < adjacencyCosts[j].length; j++) {
+                for (int j = 0; j < adjacencyCosts[i].length; j++) {
                     adjacencyCosts[i][j] = Double.MAX_VALUE;
                     rightOfWayCosts[i][j] = Double.MAX_VALUE;
                     constructionCosts[i][j] = Double.MAX_VALUE;
