@@ -908,9 +908,9 @@ public class DataInOut {
             bw.write("CRF," + soln.getCRF() + "\n");
             bw.write("Annual Capture Amount (MTCO2/yr)," + soln.getAnnualCaptureAmount() + "\n");
             bw.write("Total Cost ($M/yr)," + soln.getTotalCost() + "\n");
-            bw.write("Capture Cost ($M/yr)," + soln.getTotalCaptureCost() + "\n");
-            bw.write("Transport Cost ($M/yr)," + soln.getTotalTransportCost() + "\n");
-            bw.write("Storage Cost ($M/yr)," + soln.getTotalStorageCost() + "\n\n");
+            bw.write("Capture Cost ($M/yr)," + soln.getTotalAnnualCaptureCost() + "\n");
+            bw.write("Transport Cost ($M/yr)," + soln.getTotalAnnualTransportCost() + "\n");
+            bw.write("Storage Cost ($M/yr)," + soln.getTotalAnnualStorageCost() + "\n\n");
             bw.write("Source,Capture Amount (MTCO2/yr),Capture Cost ($M/yr)\n");
             HashMap<Source, Double> sourceCaptureAmounts = soln.getSourceCaptureAmounts();
             HashMap<Source, Double> sourceCosts = soln.getSourceCosts();

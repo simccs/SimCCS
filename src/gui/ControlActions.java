@@ -599,11 +599,11 @@ public class ControlActions {
                 solutionValues[2].setText(Double.toString(round(soln.getCaptureAmount(), 2)));
                 solutionValues[3].setText(Integer.toString(soln.getNumEdgesOpened()));
                 solutionValues[4].setText(Integer.toString(soln.getProjectLength()));
-                solutionValues[5].setText(Double.toString(round(soln.getTotalCaptureCost(), 2)));
+                solutionValues[5].setText(Double.toString(round(soln.getTotalAnnualCaptureCost(), 2)));
                 solutionValues[6].setText(Double.toString(round(soln.getUnitCaptureCost(), 2)));
-                solutionValues[7].setText(Double.toString(round(soln.getTotalTransportCost(), 2)));
+                solutionValues[7].setText(Double.toString(round(soln.getTotalAnnualTransportCost(), 2)));
                 solutionValues[8].setText(Double.toString(round(soln.getUnitTransportCost(), 2)));
-                solutionValues[9].setText(Double.toString(round(soln.getTotalStorageCost(), 2)));
+                solutionValues[9].setText(Double.toString(round(soln.getTotalAnnualStorageCost(), 2)));
                 solutionValues[10].setText(Double.toString(round(soln.getUnitStorageCost(), 2)));
                 solutionValues[11].setText(Double.toString(round(soln.getTotalCost(), 2)));
                 solutionValues[12].setText(Double.toString(round(soln.getUnitTotalCost(), 2)));
