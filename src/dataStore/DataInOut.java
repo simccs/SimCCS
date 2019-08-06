@@ -102,23 +102,23 @@ public class DataInOut {
 
     public static void loadCosts() {
         String path = basePath + "/" + dataset + "/BaseData/CostNetwork/Construction Costs.txt";
-        double[][] adjacencyCosts = new double[0][0];
         double[][] rightOfWayCosts = new double[0][0];
         double[][] constructionCosts = new double[0][0];
+        double[][] routingCosts = new double[0][0];
         try (BufferedReader br = new BufferedReader(new FileReader(path))) {
             for (int i = 0; i < 8; i++) {
                 br.readLine();
             }
 
-            // Create cost array.
-            adjacencyCosts = new double[data.getWidth() * data.getHeight() + 1][8];
+            // Create cost arrays.
             rightOfWayCosts = new double[data.getWidth() * data.getHeight() + 1][8];
             constructionCosts = new double[data.getWidth() * data.getHeight() + 1][8];
-            for (int i = 0; i < adjacencyCosts.length; i++) {
-                for (int j = 0; j < adjacencyCosts[i].length; j++) {
-                    adjacencyCosts[i][j] = Double.MAX_VALUE;
+            routingCosts = new double[data.getWidth() * data.getHeight() + 1][8];
+            for (int i = 0; i < constructionCosts.length; i++) {
+                for (int j = 0; j < constructionCosts[i].length; j++) {
                     rightOfWayCosts[i][j] = Double.MAX_VALUE;
                     constructionCosts[i][j] = Double.MAX_VALUE;
+                    routingCosts[i][j] = Double.MAX_VALUE;
                 }
             }
 
@@ -130,7 +130,6 @@ public class DataInOut {
                 String[] cells = line.split("\\s+");
                 int centerCell = Integer.parseInt(cells[0]);
                 for (int i = 1; i < costs.length; i++) {
-                    adjacencyCosts[centerCell][data.getNeighborNum(centerCell, Integer.parseInt(cells[i]))] = Double.parseDouble(costs[i]);
                     constructionCosts[centerCell][data.getNeighborNum(centerCell, Integer.parseInt(cells[i]))] = Double.parseDouble(costs[i]);
                 }
                 line = br.readLine();
@@ -153,7 +152,6 @@ public class DataInOut {
                 String[] cells = line.split("\\s+");
                 int centerCell = Integer.parseInt(cells[0]);
                 for (int i = 1; i < costs.length; i++) {
-                    adjacencyCosts[centerCell][data.getNeighborNum(centerCell, Integer.parseInt(cells[i]))] += Double.parseDouble(costs[i]);
                     rightOfWayCosts[centerCell][data.getNeighborNum(centerCell, Integer.parseInt(cells[i]))] = Double.parseDouble(costs[i]);
                 }
                 line = br.readLine();
@@ -161,10 +159,39 @@ public class DataInOut {
         } catch (IOException e) {
             rightOfWayCosts = null;
         }
+        
+        // Load routing costs.
+        path = basePath + "/" + dataset + "/BaseData/CostNetwork/Routing Costs.txt";
+        try (BufferedReader br = new BufferedReader(new FileReader(path))) {
+            for (int i = 0; i < 8; i++) {
+                br.readLine();
+            }
 
-        data.setAdjacencyCosts(adjacencyCosts);
+            String line = br.readLine();
+            while (line != null) {
+                String costLine = br.readLine();
+                String[] costs = costLine.split("\\s+");
+                String[] cells = line.split("\\s+");
+                int centerCell = Integer.parseInt(cells[0]);
+                for (int i = 1; i < costs.length; i++) {
+                    routingCosts[centerCell][data.getNeighborNum(centerCell, Integer.parseInt(cells[i]))] = Double.parseDouble(costs[i]);
+                }
+                line = br.readLine();
+            }
+        } catch (IOException e) {
+            for (int i = 0; i < routingCosts.length; i++) {
+                for (int j = 0; j < routingCosts[i].length; j++) {
+                    routingCosts[i][j] = constructionCosts[i][j];
+                    if (rightOfWayCosts != null) {
+                        routingCosts[i][j] += rightOfWayCosts[i][j];
+                    }
+                }
+            }
+        }
+        
         data.setConstructionCosts(constructionCosts);
         data.setRightOfWayCosts(rightOfWayCosts);
+        data.setRoutingCosts(routingCosts);
     }
 
     private static void loadSources() {

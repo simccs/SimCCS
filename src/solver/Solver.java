@@ -38,7 +38,7 @@ public class Solver {
             boolean reachable = false;
             int cellNum = src.getCellNum();
             for (int neighborCell : data.getNeighborCells(cellNum)) {
-                if (data.getEdgeCost(cellNum, neighborCell) < Double.MAX_VALUE) {
+                if (data.getEdgeWeight(cellNum, neighborCell, "r") < Double.MAX_VALUE) {
                     reachable = true;
                 }
             }
@@ -52,7 +52,7 @@ public class Solver {
             boolean reachable = false;
             int cellNum = snk.getCellNum();
             for (int neighborCell : data.getNeighborCells(cellNum)) {
-                if (data.getEdgeCost(cellNum, neighborCell) < Double.MAX_VALUE) {
+                if (data.getEdgeWeight(cellNum, neighborCell, "r") < Double.MAX_VALUE) {
                     reachable = true;
                 }
             }
@@ -119,7 +119,7 @@ public class Solver {
                     if ((path[0] == pair.v1 && path[path.length - 1] == pair.v2) || (path[0] == pair.v2 && path[path.length - 1] == pair.v1)) {
                         for (int i = 0; i < path.length - 1; i++) {
                             Edge e = new Edge(path[i], path[i + 1]);
-                            graphEdgeCosts.put(e, data.getEdgeCost(path[i], path[i + 1]));
+                            graphEdgeCosts.put(e, data.getEdgeWeight(path[i], path[i + 1], "c"));
                             graphEdgeRoutes.put(e, new int[]{path[i], path[i + 1]});
 
                             // Add neighbor of i and i+1
@@ -275,7 +275,7 @@ public class Solver {
                 if (!connectedDests.isEmpty()) {
                     for (int neighborCell : data.getNeighborCells(u.cellNum)) {
                         if (neighborCell != 0) {
-                            double altDistance = costs[u.cellNum] + data.getModifiedEdgeCost(u.cellNum, neighborCell);
+                            double altDistance = costs[u.cellNum] + data.getModifiedEdgeRoutingCost(u.cellNum, neighborCell);
                             if (altDistance < costs[neighborCell] && !map[neighborCell].connected) {
                                 costs[neighborCell] = altDistance;
                                 previous[neighborCell] = u.cellNum;
@@ -306,9 +306,9 @@ public class Solver {
             // Modify edge costs and recalculate real cost
             double cost = 0;
             for (int i = 0; i < pathList.size() - 1; i++) {
-                cost += data.getEdgeCost(pathList.get(i), pathList.get(i + 1));
-                data.updateModifiedEdgeCost(pathList.get(i), pathList.get(i + 1), edgeCostModification);
-                data.updateModifiedEdgeCost(pathList.get(i + 1), pathList.get(i), edgeCostModification);
+                cost += data.getEdgeWeight(pathList.get(i), pathList.get(i + 1), "c");
+                data.updateModifiedEdgeRoutingCost(pathList.get(i), pathList.get(i + 1), edgeCostModification);
+                data.updateModifiedEdgeRoutingCost(pathList.get(i + 1), pathList.get(i), edgeCostModification);
             }
             pathCosts.add(cost);
             paths.add(convertIntegerArray(pathList.toArray(new Integer[0])));

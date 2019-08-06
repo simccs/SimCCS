@@ -35,10 +35,10 @@ public class DataStorer {
     // Raw network information
     private int[][] shortestPaths;   // [pathNum] = [nodeInPath1, nodeInPath2,...]
     private double[] shortestPathCosts;  //[pathNum] = costForPathNum
-    private double[][] adjacencyCosts;
-    private double[][] modifiedAdjacencyCosts;
     private double[][] rightOfWayCosts;
     private double[][] constructionCosts;
+    private double[][] routingCosts;
+    private double[][] modifiedRoutingCosts;
 
     // Candidate network graph information
     private int[] graphVertices;    // Set of all vertices in graph (source/sink/junction)
@@ -118,7 +118,7 @@ public class DataStorer {
     }
 
     public void loadNetworkCosts() {
-        if (adjacencyCosts == null) {
+        if (constructionCosts == null) {
             DataInOut.loadCosts();
 
             // Make right of way and construction costs
@@ -189,12 +189,20 @@ public class DataStorer {
         return delaunayPairs;
     }
 
-    // Get edge cost in base cost surface.
-    public double getEdgeCost(int cell1, int cell2) {
+    // Get edge weight in one of the base cost surfaces.
+    public double getEdgeWeight(int cell1, int cell2, String type) {
         if (cell1 == cell2) {
             return 0;
         } else if (getNeighborNum(cell1, cell2) >= 0 && getNeighborNum(cell1, cell2) < 8) {
-            return adjacencyCosts[cell1][getNeighborNum(cell1, cell2)];
+            if (type.equals("r")) {
+                return routingCosts[cell1][getNeighborNum(cell1, cell2)];
+            } else if (type.equals("c")) {
+                if (rightOfWayCosts != null) {
+                    return constructionCosts[cell1][getNeighborNum(cell1, cell2)] + rightOfWayCosts[cell1][getNeighborNum(cell1, cell2)];
+                } else {
+                    return constructionCosts[cell1][getNeighborNum(cell1, cell2)];
+                }
+            }
         }
         return Double.MAX_VALUE;
     }
@@ -204,7 +212,7 @@ public class DataStorer {
         if (rightOfWayCosts == null) {
             return 0;
         }
-        
+
         if (cell1 == cell2) {
             return 0;
         } else if (getNeighborNum(cell1, cell2) >= 0 && getNeighborNum(cell1, cell2) < 8) {
@@ -307,20 +315,20 @@ public class DataStorer {
         return sourceSinkCellLocations;
     }
 
-    public double getModifiedEdgeCost(int cell1, int cell2) {
+    public double getModifiedEdgeRoutingCost(int cell1, int cell2) {
         if (cell1 == cell2) {
             return 0;
         } else if (getNeighborNum(cell1, cell2) >= 0 && getNeighborNum(cell1, cell2) < 8) {
-            return modifiedAdjacencyCosts[cell1][getNeighborNum(cell1, cell2)];
+            return modifiedRoutingCosts[cell1][getNeighborNum(cell1, cell2)];
         }
         return Double.MAX_VALUE;
     }
 
-    public void updateModifiedEdgeCost(int cell1, int cell2, double edgeCostModification) {
+    public void updateModifiedEdgeRoutingCost(int cell1, int cell2, double edgeCostModification) {
         if (cell1 == cell2) {
 
         } else if (getNeighborNum(cell1, cell2) >= 0 && getNeighborNum(cell1, cell2) < 8) {
-            modifiedAdjacencyCosts[cell1][getNeighborNum(cell1, cell2)] = edgeCostModification * adjacencyCosts[cell1][getNeighborNum(cell1, cell2)];
+            modifiedRoutingCosts[cell1][getNeighborNum(cell1, cell2)] = edgeCostModification * routingCosts[cell1][getNeighborNum(cell1, cell2)];
         }
     }
 
@@ -423,14 +431,6 @@ public class DataStorer {
         return basePath + "/" + dataset + "/BaseData/CostSurface/cost.bmp";
     }
 
-    public double[][] getAdjacencyCosts() {
-        return adjacencyCosts;
-    }
-
-    public double[][] getModifiedAdjacencyCosts() {
-        return modifiedAdjacencyCosts;
-    }
-
     public double getMaxAnnualCapturable() {
         double maxCap = 0;
         for (Source src : sources) {
@@ -460,24 +460,24 @@ public class DataStorer {
         this.cellSize = cellSize;
     }
 
-    public void setAdjacencyCosts(double[][] adjacencyCosts) {
-        this.adjacencyCosts = adjacencyCosts;
-
-        modifiedAdjacencyCosts = new double[adjacencyCosts.length][];
-        for (int i = 0; i < adjacencyCosts.length; i++) {
-            double[] temp = adjacencyCosts[i];
-            int tempLength = temp.length;
-            modifiedAdjacencyCosts[i] = new double[tempLength];
-            System.arraycopy(temp, 0, modifiedAdjacencyCosts[i], 0, tempLength);
-        }
-    }
-
     public void setRightOfWayCosts(double[][] rightOfWayCosts) {
         this.rightOfWayCosts = rightOfWayCosts;
     }
 
     public void setConstructionCosts(double[][] constructionCosts) {
         this.constructionCosts = constructionCosts;
+    }
+
+    public void setRoutingCosts(double[][] routingCosts) {
+        this.routingCosts = routingCosts;
+        
+        modifiedRoutingCosts = new double[routingCosts.length][];
+        for (int i = 0; i < routingCosts.length; i++) {
+            double[] temp = routingCosts[i];
+            int tempLength = temp.length;
+            modifiedRoutingCosts[i] = new double[tempLength];
+            System.arraycopy(temp, 0, modifiedRoutingCosts[i], 0, tempLength);
+        }
     }
 
     public void setSources(Source[] sources) {
