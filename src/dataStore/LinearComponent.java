@@ -5,10 +5,11 @@ package dataStore;
  * @author yaw
  */
 public class LinearComponent {
-    private double conAlpha; //con = construction
-    private double conBeta;
-    private double rowAlpha; //row = right of way
-    private double rowBeta;
+    private double conSlope; //con = construction
+    private double conIntercept;
+    private double rowSlope; //row = right of way
+    private double rowIntercept;
+    private double maxCapacity;
     
     private DataStorer data;
     
@@ -16,35 +17,43 @@ public class LinearComponent {
         this.data = data;
     }
     
-    public void setConAlpha(double conAlpha) {
-        this.conAlpha = conAlpha;
+    public void setConSlope(double conSlope) {
+        this.conSlope = conSlope;
     }
     
-    public void setConBeta(double conBeta) {
-        this.conBeta = conBeta;
+    public void setConIntercept(double conIntercept) {
+        this.conIntercept = conIntercept;
     }
     
-    public void setRowAlpha(double rowAlpha) {
-        this.rowAlpha = rowAlpha;
+    public void setRowSlope(double rowSlope) {
+        this.rowSlope = rowSlope;
     }
     
-    public void setRowBeta(double rowBeta) {
-        this.rowBeta = rowBeta;
+    public void setRowIntercept(double rowIntercept) {
+        this.rowIntercept = rowIntercept;
     }
     
-    public double getConAlpha() {
-        return conAlpha;
+    public void setMaxCapacity(double maxCapacity) {
+        this.maxCapacity = maxCapacity;
     }
     
-    public double getRowAlpha() {
-        return rowAlpha;
+    public double getConSlope() {
+        return conSlope;
     }
     
-    public double getConBeta() {
-        return conBeta;
+    public double getRowSlope() {
+        return rowSlope;
     }
     
-    public double getRowBeta() {
-        return rowBeta;
+    public double getConIntercept() {
+        return conIntercept;
+    }
+    
+    public double getRowIntercept() {
+        return rowIntercept;
+    }
+    
+    public double getMaxCapacity() {
+        return maxCapacity;
     }
 }

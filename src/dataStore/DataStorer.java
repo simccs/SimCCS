@@ -200,6 +200,11 @@ public class DataStorer {
     }
 
     public double getEdgeRightOfWayCost(int cell1, int cell2) {
+        // Catch if right of way costs are not used.
+        if (rightOfWayCosts == null) {
+            return 0;
+        }
+        
         if (cell1 == cell2) {
             return 0;
         } else if (getNeighborNum(cell1, cell2) >= 0 && getNeighborNum(cell1, cell2) < 8) {
