@@ -438,9 +438,9 @@ public class DataInOut {
         }
     }
     
-    public static double[] loadPrices() {
+    public static void loadPriceConfiguration() {
         // Check if file exists
-        String pricesPath = basePath + "/" + dataset + "/Scenarios/" + scenario + "/priceInput.csv";
+        String pricesPath = basePath + "/" + dataset + "/Scenarios/" + scenario + "/Configurations/priceInput.csv";
         if (new File(pricesPath).exists()) {
             // Load from file.
             try (BufferedReader br = new BufferedReader(new FileReader(pricesPath))) {
@@ -458,19 +458,18 @@ public class DataInOut {
                 for (int i = 0; i < prices.length; i++) {
                     prices[i] = min + i * step;
                 }
-                return prices;
+                data.setPriceConfiguration(prices);
             } catch (IOException e) {
                 System.out.println(e.getMessage());
-                return null;
             }
         } else {
-            return null;
+            System.out.println("No price configuration file.");
         }
     }
     
     public static void loadTimeConfiguration() {
         // Check if file exists
-        String timeConfigurationPath = basePath + "/" + dataset + "/Scenarios/" + scenario + "/timeInput.csv";
+        String timeConfigurationPath = basePath + "/" + dataset + "/Scenarios/" + scenario + "/Configuartions/timeInput.csv";
         if (new File(timeConfigurationPath).exists()) {
             // Load from file.
             try (BufferedReader br = new BufferedReader(new FileReader(timeConfigurationPath))) {

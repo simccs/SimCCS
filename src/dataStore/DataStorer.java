@@ -50,6 +50,7 @@ public class DataStorer {
     
     // Configuration data
     private double[][] timeConfiguration;
+    private double[] priceConfiguration;
 
     private HashMap<Edge, ArrayList<Edge>> sourceSinkRoutes;
     
@@ -464,6 +465,10 @@ public class DataStorer {
     public double[][] getTimeConfiguration() {
         return timeConfiguration;
     }
+    
+    public double[] getPriceConfiguration() {
+        return priceConfiguration;
+    }
 
     // Data element set methods
     // Heuristic
@@ -578,5 +583,9 @@ public class DataStorer {
     
     public void setTimeConfiguration(double[][] timeConfiguration) {
         this.timeConfiguration = timeConfiguration;
+    }
+    
+    public void setPriceConfiguration(double[] priceConfiguration) {
+        this.priceConfiguration = priceConfiguration;
     }
 }

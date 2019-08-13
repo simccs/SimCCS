@@ -277,7 +277,8 @@ public class ControlActions {
     // Price simulation
     public void runPriceSimulation(String crf, String numYears, String inputPrice, String numPairs, int modelVersion) {
         // Load simulation parmeters.
-        double prices[] = DataInOut.loadPrices();
+        DataInOut.loadPriceConfiguration();
+        double prices[] = data.getPriceConfiguration();
         if (prices == null) {
             prices = new double[]{Double.parseDouble(inputPrice)};
         }
