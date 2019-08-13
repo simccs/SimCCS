@@ -17,6 +17,9 @@ public class Sink {
     
     private DataStorer data;
     
+    private double remainingCapacity;    //Heuristic
+    private int numWells;   //Heuristic
+    
     public Sink(DataStorer data) {
         this.data = data;
     }
@@ -55,6 +58,26 @@ public class Sink {
     
     public void setCapacity(double capacity) {
         this.capacity = capacity;
+    }
+    
+    // Heuristic
+    public void setRemainingCapacity(double remaingCapacity) {
+        this.remainingCapacity = remaingCapacity;
+    }
+    
+    // Heuristic
+    public void setNumWells(int numWells) {
+        this.numWells = numWells;
+    }
+    
+    //Heuristic
+    public int getNumWells() {
+        return numWells;
+    }
+
+    // Heuristic
+    public double getRemainingCapacity() {
+        return remainingCapacity;
     }
 
     public int getCellNum() {

@@ -52,6 +52,10 @@ public class DataStorer {
     private double[][] timeConfiguration;
 
     private HashMap<Edge, ArrayList<Edge>> sourceSinkRoutes;
+    
+    private double targetCaptureAmount;     // Heuristic
+    private double crf;     //Heuristic
+    private int projectLength;   // Heuristic
 
     public DataStorer(String basePath, String dataset, String scenario) {
         this.basePath = basePath;
@@ -215,7 +219,7 @@ public class DataStorer {
         if (rightOfWayCosts == null) {
             return 0;
         }
-
+        
         if (cell1 == cell2) {
             return 0;
         } else if (getNeighborNum(cell1, cell2) >= 0 && getNeighborNum(cell1, cell2) < 8) {
@@ -433,7 +437,12 @@ public class DataStorer {
         File temp = new File(basePath + "/" + dataset + "/BaseData/CostSurface/cost.bmp");
         return basePath + "/" + dataset + "/BaseData/CostSurface/cost.bmp";
     }
-
+    
+    // Heuristic
+    public double getTargetCaptureAmount() {
+        return targetCaptureAmount;
+    }
+    
     public double getMaxAnnualCapturable() {
         double maxCap = 0;
         for (Source src : sources) {
@@ -442,11 +451,36 @@ public class DataStorer {
         return maxCap;
     }
     
+    // Heuristic
+    public double getCrf() {
+        return crf;
+    }
+    
+    // Heuristic
+    public int getProjectLength() {
+        return projectLength;
+    }
+    
     public double[][] getTimeConfiguration() {
         return timeConfiguration;
     }
 
     // Data element set methods
+    // Heuristic
+    public void setProjectLength(int projectLength) {
+        this.projectLength = projectLength;
+    }
+    
+    // Heuristic
+    public void setCrf(double crf) {
+        this.crf = crf;
+    }
+    
+    // Heuristic
+    public void setTargetCaptureAmount(double amt) {
+        targetCaptureAmount = amt;
+    }
+    
     public void setWidth(int width) {
         this.width = width;
     }
@@ -474,7 +508,7 @@ public class DataStorer {
     public void setConstructionCosts(double[][] constructionCosts) {
         this.constructionCosts = constructionCosts;
     }
-
+    
     public void setRoutingCosts(double[][] routingCosts) {
         this.routingCosts = routingCosts;
         
@@ -514,11 +548,11 @@ public class DataStorer {
     public void setGraphEdgeCosts(HashMap<Edge, Double> edgeCosts) {
         graphEdgeCosts = edgeCosts;
     }
-
+    
     public void setGraphEdgeConstructionCosts(HashMap<Edge, Double> constructionCosts) {
         graphEdgeConstructionCosts = constructionCosts;
     }
-
+    
     public void setGraphEdgeRightOfWayCosts(HashMap<Edge, Double> rowCosts) {
         graphEdgeRightOfWayCosts = rowCosts;
     }

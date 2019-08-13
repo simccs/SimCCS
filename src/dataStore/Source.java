@@ -14,6 +14,8 @@ public class Source {
     
     private DataStorer data;
     
+    private double remainingCapacity;    //Heuristic
+    
     public Source(DataStorer data) {
         this.data = data;
     }
@@ -41,7 +43,17 @@ public class Source {
     public void setProductionRate(double productionRate) {
         this.productionRate = productionRate;
     }
+    
+    // Heuristic
+    public void setRemainingCapacity(double remaingCapacity) {
+        this.remainingCapacity = remaingCapacity;
+    }
 
+    // Heuristic
+    public double getRemainingCapacity() {
+        return remainingCapacity;
+    }
+    
     public int getCellNum() {
         return cellNum;
     }

@@ -18,7 +18,7 @@ import java.util.HashSet;
 public class MPSWriter {
 
     public static void writeCapPriceMPS(String fileName, DataStorer data, double crf, double numYears, double capacityTarget, String basePath, String dataset, String scenario, int modelVersion) {
-        //model version: 1 - cap, 2 - price.
+        //model version: 1 - cap, 2 - price, 3 - time.
 
         // Collect data
         Source[] sources = data.getSources();
@@ -363,7 +363,7 @@ public class MPSWriter {
 
         makeFile(fileName, basePath, dataset, scenario, intVariableToConstraints, contVariableToConstraints, constraintToSign, constraintRHS, variableBounds);
     }
-
+    
     public static void writeTimeMPS(String fileName, DataStorer data, double crf, String basePath, String dataset, String scenario) {
         // Collect data
         Source[] sources = data.getSources();
@@ -778,7 +778,6 @@ public class MPSWriter {
             bw.write(problemFormulation.toString());
         } catch (IOException e) {
             System.out.println(e.getMessage());
-
         }
     }
 

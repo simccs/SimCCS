@@ -102,7 +102,7 @@ public class Solution {
     }
     
     //public void setTargetCaptureAmountPerYear(double targetCaptureAmount) {
-    //    this.targetCaptureAmountPerYear = targetCaptureAmount;
+    //    this.captureAmountPerYear = targetCaptureAmount;
     //}
     
     public void setProjectLength(int projectLength) {
@@ -158,7 +158,11 @@ public class Solution {
     }
     
     public double getCaptureAmount() {
-        return captureAmountPerYear * projectLength;
+        double amountCaptured = 0;
+        for (Source src : sourceCaptureAmounts.keySet()) {
+            amountCaptured += sourceCaptureAmounts.get(src);
+        }
+        return amountCaptured * projectLength;
     }
     
     public double getAnnualCaptureAmount() {

@@ -34,6 +34,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TreeMap;
 
+import solver.Heuristic;
+
 /**
  *
  * @author yaw
@@ -159,7 +161,7 @@ public class DataInOut {
         } catch (IOException e) {
             rightOfWayCosts = null;
         }
-
+        
         // Load routing costs.
         path = basePath + "/" + dataset + "/BaseData/CostNetwork/Routing Costs.txt";
         try (BufferedReader br = new BufferedReader(new FileReader(path))) {
@@ -188,7 +190,7 @@ public class DataInOut {
                 }
             }
         }
-
+        
         data.setConstructionCosts(constructionCosts);
         data.setRightOfWayCosts(rightOfWayCosts);
         data.setRoutingCosts(routingCosts);
@@ -435,7 +437,37 @@ public class DataInOut {
             System.out.println("Not Yet Generated.");
         }
     }
+    
+    public static double[] loadPrices() {
+        // Check if file exists
+        String pricesPath = basePath + "/" + dataset + "/Scenarios/" + scenario + "/priceInput.csv";
+        if (new File(pricesPath).exists()) {
+            // Load from file.
+            try (BufferedReader br = new BufferedReader(new FileReader(pricesPath))) {
+                br.readLine();
+                String line = br.readLine();
 
+                String[] elements = line.split(",");
+                double min = Double.parseDouble(elements[0]);
+                double max = Double.parseDouble(elements[1]);
+                double step = Double.parseDouble(elements[2]);
+
+                // Make prices array
+                int num = (int) Math.floor((max - min + 1) / step);
+                double[] prices = new double[num];
+                for (int i = 0; i < prices.length; i++) {
+                    prices[i] = min + i * step;
+                }
+                return prices;
+            } catch (IOException e) {
+                System.out.println(e.getMessage());
+                return null;
+            }
+        } else {
+            return null;
+        }
+    }
+    
     public static void loadTimeConfiguration() {
         // Check if file exists
         String timeConfigurationPath = basePath + "/" + dataset + "/Scenarios/" + scenario + "/timeInput.csv";
@@ -542,6 +574,110 @@ public class DataInOut {
         } catch (IOException e) {
             System.out.println(e.getMessage());
         }
+    }
+
+    // Heuristic
+    public static void saveHeuristicSolution(File solutionDirectory, Heuristic heuristic) {
+        // Collect data.
+        Source[] sources = heuristic.getSources();
+        Sink[] sinks = heuristic.getSinks();
+        int[] graphVertices = heuristic.getGraphVertices();
+        HeuristicEdge[][] adjacencyMatrix = heuristic.getAdjacencyMatrix();
+        HashMap<Integer, Integer> cellNumToVertexNum = heuristic.getCellVertexMap();
+        double crf = data.getCrf();
+
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(solutionDirectory.toString() + "/solution.txt"))) {
+            bw.write("crf:\t" + crf + "\n");
+            bw.write("captureTarget:\t" + data.getTargetCaptureAmount() + "\n");
+            bw.write("projectLength:\t" + data.getProjectLength() + "\n");
+
+            bw.write("SourceCell\tSourceLabel\tCaptureAmount\tCost\n");
+            for (Source src : sources) {
+                if (src.getRemainingCapacity() < src.getProductionRate()) {
+                    double captureAmount = src.getProductionRate() - src.getRemainingCapacity();
+                    double cost = src.getOpeningCost(crf) + src.getCaptureCost() * captureAmount;
+                    bw.write(src.getCellNum() + "\t" + src.getLabel() + "\t" + captureAmount + "\t" + cost + "\n");
+                }
+            }
+
+            bw.write("Sink\tSinkLabel\tInjectAmount\tCost\n");
+            for (Sink snk : sinks) {
+                if (snk.getRemainingCapacity() < (snk.getCapacity() / data.getProjectLength())) {
+                    double injectAmount = (snk.getCapacity() / data.getProjectLength()) - snk.getRemainingCapacity();
+                    double cost = snk.getOpeningCost(crf) + snk.getInjectionCost() * injectAmount + snk.getNumWells() * snk.getWellOpeningCost(crf);
+                    bw.write(snk.getCellNum() + "\t" + snk.getLabel() + "\t" + injectAmount + "\t" + cost + "\n");
+                }
+            }
+
+            bw.write("EdgeSrc\tEdgeSnk\tFlowAmount\tCost\n");
+            for (int u = 0; u < graphVertices.length; u++) {
+                for (int v = 0; v < graphVertices.length; v++) {
+                    HeuristicEdge edge = adjacencyMatrix[u][v];
+                    if (edge != null && edge.currentHostingAmount > 0) {
+                        double flowAmount = edge.currentHostingAmount;
+                        double cost = edge.buildCost[edge.currentSize] + edge.transportCost[edge.currentSize] * flowAmount;
+                        bw.write(edge.v1 + "\t" + edge.v2 + "\t" + flowAmount + "\t" + cost + "\n");
+                    }
+                }
+            }
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    // Heuristic
+    public static Solution loadHeuristicSolution(String solutionPath) {
+        Solution soln = new Solution();
+        Source[] sources = data.getSources();
+        Sink[] sinks = data.getSinks();
+
+        try (BufferedReader br = new BufferedReader(new FileReader(solutionPath.toString() + "/solution.txt"))) {
+            String line = br.readLine();
+            soln.setCRF(Double.parseDouble(line.split("\t")[1]));
+
+            line = br.readLine();
+
+            line = br.readLine();
+            soln.setProjectLength(Integer.parseInt(line.split("\t")[1]));
+
+            line = br.readLine();
+            line = br.readLine();
+            while (!line.startsWith("Sink")) {
+                String[] sourceComponents = line.split("\t");
+                Source source = sources[data.sourceNum(Integer.parseInt(sourceComponents[0]))];
+                double captureAmount = Double.parseDouble(sourceComponents[2]);
+                double cost = Double.parseDouble(sourceComponents[3]);
+                soln.addSourceCaptureAmount(source, captureAmount);
+                soln.addSourceCostComponent(source, cost);
+                line = br.readLine();
+            }
+
+            line = br.readLine();
+            while (!line.startsWith("EdgeSrc")) {
+                String[] sinkComponents = line.split("\t");
+                Sink sink = sinks[data.sinkNum(Integer.parseInt(sinkComponents[0]))];
+                double injectAmount = Double.parseDouble(sinkComponents[2]);
+                double cost = Double.parseDouble(sinkComponents[3]);
+                soln.addSinkStorageAmount(sink, injectAmount);
+                soln.addSinkCostComponent(sink, cost);
+                line = br.readLine();
+            }
+
+            line = br.readLine();
+            while (line != null) {
+                String[] edgeComponents = line.split("\t");
+                Edge edge = new Edge(Integer.parseInt(edgeComponents[0]), Integer.parseInt(edgeComponents[1]));
+                double flowAmount = Double.parseDouble(edgeComponents[2]);
+                double cost = Double.parseDouble(edgeComponents[3]);
+                soln.addEdgeTransportAmount(edge, flowAmount);
+                soln.addEdgeCostComponent(edge, cost);
+                line = br.readLine();
+            }
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+        }
+
+        return soln;
     }
 
     public static Solution loadSolution(String solutionPath, int timeslot) {
@@ -674,7 +810,7 @@ public class DataInOut {
 
         return soln;
     }
-
+    
     public static int determineNumTimeslots(String mpsFilePath) {
         File mpsFile = new File(mpsFilePath);
         HashSet<Integer> timeslots = new HashSet<>();
@@ -1029,7 +1165,7 @@ public class DataInOut {
         }
 
     }
-
+    
     public static void makeSolutionFile(String path, Solution soln) {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(new File(path, "solution.csv")))) {
             bw.write("Project Length," + soln.getProjectLength() + "\n");
@@ -1057,6 +1193,7 @@ public class DataInOut {
                 bw.write(sinkStorageAmounts.get(snk) + ",");
                 bw.write(sinkCosts.get(snk) + "\n");
             }
+            
             bw.write("\n");
 
             bw.write("Edge Source,Edge Sink,Amount (MTCO2/yr),Transport Cost ($M/yr)\n");
@@ -1067,6 +1204,14 @@ public class DataInOut {
                 bw.write(edgeTransportAmounts.get(edg) + ",");
                 bw.write(edgeCosts.get(edg) + "\n");
             }
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+    
+    public static void makePriceAggregationFile(String path, String content) {
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(path))) {
+            bw.write(content);
         } catch (IOException e) {
             System.out.println(e.getMessage());
         }

@@ -391,16 +391,16 @@ public class Gui extends Application {
         yearValue.setLayoutY(34);
         formulationPane.getChildren().add(yearValue);
 
-        Label capLabel = new Label("Capture Target (MT/y)");
-        capLabel.setLayoutX(4);
-        capLabel.setLayoutY(68);
-        formulationPane.getChildren().add(capLabel);
-        TextField capValue = new TextField("15");
-        capValue.setEditable(true);
-        capValue.setPrefColumnCount(2);
-        capValue.setLayoutX(143);
-        capValue.setLayoutY(64);
-        formulationPane.getChildren().add(capValue);
+        Label paramLabel = new Label("Capture Target (MT/y)");
+        paramLabel.setLayoutX(4);
+        paramLabel.setLayoutY(68);
+        formulationPane.getChildren().add(paramLabel);
+        TextField paramValue = new TextField("15");
+        paramValue.setEditable(true);
+        paramValue.setPrefColumnCount(2);
+        paramValue.setLayoutX(143);
+        paramValue.setLayoutY(64);
+        formulationPane.getChildren().add(paramValue);
         
         RadioButton capVersion = new RadioButton("Cap");
         RadioButton priceVersion = new RadioButton("Price");
@@ -414,6 +414,7 @@ public class Gui extends Application {
             public void changed(ObservableValue<? extends Boolean> selected, Boolean oldVal, Boolean show) {
                 if (!oldVal) {
                     priceVersion.setSelected(false);
+                    paramLabel.setText("Capture Target (MT/y)");
                     timeVersion.setSelected(false);
                 }
             }
@@ -427,6 +428,7 @@ public class Gui extends Application {
             public void changed(ObservableValue<? extends Boolean> selected, Boolean oldVal, Boolean show) {
                 if (!oldVal) {
                     capVersion.setSelected(false);
+                    paramLabel.setText("Tax/Credit ($/t)");
                     timeVersion.setSelected(false);
                 }
             }
@@ -445,10 +447,23 @@ public class Gui extends Application {
             }
         });
 
+        // Populate model pane.
+        TitledPane modelContainer = new TitledPane("Problem Formulation", formulationPane);  //Heuristic
+        modelContainer.setCollapsible(false);
+        modelContainer.setPrefSize(192, 147);
+        modelContainer.setLayoutX(14);
+        modelContainer.setLayoutY(5);
+        modelPane.getChildren().add(modelContainer);
+        
+        // Solution pane.
+        AnchorPane mipSolutionPane = new AnchorPane();
+        mipSolutionPane.setPrefSize(192, 100);
+        mipSolutionPane.setMinSize(0, 0);
+        
         Button generateSolutionFile = new Button("Generate MPS File");
-        generateSolutionFile.setLayoutX(25);
-        generateSolutionFile.setLayoutY(120);
-        formulationPane.getChildren().add(generateSolutionFile);
+        generateSolutionFile.setLayoutX(33);
+        generateSolutionFile.setLayoutY(5);
+        mipSolutionPane.getChildren().add(generateSolutionFile);
         generateSolutionFile.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent e) {
@@ -460,27 +475,19 @@ public class Gui extends Application {
                 } else if (timeVersion.isSelected()) {
                     modelVersion = 3;
                 }
-                controlActions.generateMPSFile(crfValue.getText(), yearValue.getText(), capValue.getText(), modelVersion);
+                controlActions.generateMPSFile(crfValue.getText(), yearValue.getText(), paramValue.getText(), modelVersion);
             }
         });
-
-        // Populate model pane.
-        TitledPane modelContainer = new TitledPane("Problem Formulation", formulationPane);
-        modelContainer.setCollapsible(false);
-        modelContainer.setPrefSize(192, 175);
-        modelContainer.setLayoutX(14);
-        modelContainer.setLayoutY(5);
-        modelPane.getChildren().add(modelContainer);
         
-        // Solution pane.
-        AnchorPane solvePane = new AnchorPane();
-        solvePane.setPrefSize(192, 100);
-        solvePane.setMinSize(0, 0);
+        Label solverLabel = new Label("Solver:");
+        solverLabel.setLayoutX(4);
+        solverLabel.setLayoutY(44);
+        mipSolutionPane.getChildren().add(solverLabel);
         
-        Button cplexSolve = new Button("Solve With CPLEX");
-        cplexSolve.setLayoutX(28);
-        cplexSolve.setLayoutY(5);
-        solvePane.getChildren().add(cplexSolve);
+        Button cplexSolve = new Button("CPLEX");
+        cplexSolve.setLayoutX(51);
+        cplexSolve.setLayoutY(38);  // Heuristic
+        mipSolutionPane.getChildren().add(cplexSolve);
         cplexSolve.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent e) {
@@ -488,10 +495,10 @@ public class Gui extends Application {
             }
         });
         
-        Button gatewaySolve = new Button("Solve With Gateway");
-        gatewaySolve.setLayoutX(23);
-        gatewaySolve.setLayoutY(37);
-        solvePane.getChildren().add(gatewaySolve);
+        Button gatewaySolve = new Button("Gateway");
+        gatewaySolve.setLayoutX(115);
+        gatewaySolve.setLayoutY(38);    // Heuristic
+        mipSolutionPane.getChildren().add(gatewaySolve);
         gatewaySolve.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent e) {
@@ -499,13 +506,57 @@ public class Gui extends Application {
             }
         });
 
-        // Populate solution method pane.
-        TitledPane solutionContainer = new TitledPane("Solve Problem", solvePane);
-        solutionContainer.setCollapsible(false);
-        solutionContainer.setPrefSize(192, 97);
-        solutionContainer.setLayoutX(14);
-        solutionContainer.setLayoutY(185);
-        modelPane.getChildren().add(solutionContainer);
+        // Populate MIP solution method pane.
+        TitledPane mipSolutionContainer = new TitledPane("MIP Solver", mipSolutionPane);
+        mipSolutionContainer.setCollapsible(false);
+        mipSolutionContainer.setPrefSize(192, 95);    // Heuristic
+        mipSolutionContainer.setLayoutX(14);
+        mipSolutionContainer.setLayoutY(158);
+        modelPane.getChildren().add(mipSolutionContainer);
+        
+        // Solution pane.
+        AnchorPane heuristicSolutionPane = new AnchorPane();
+        heuristicSolutionPane.setPrefSize(192, 100);
+        heuristicSolutionPane.setMinSize(0, 0);
+        
+        Label numPairsLabel = new Label("Batch Size");
+        numPairsLabel.setLayoutX(30);
+        numPairsLabel.setLayoutY(8);
+        heuristicSolutionPane.getChildren().add(numPairsLabel);
+        TextField numPairsValue = new TextField("1");
+        numPairsValue.setEditable(true);
+        numPairsValue.setPrefColumnCount(2);
+        numPairsValue.setLayoutX(120);
+        numPairsValue.setLayoutY(4);
+        heuristicSolutionPane.getChildren().add(numPairsValue);
+        
+        // Heuristic
+        Button heuristicSolve = new Button("Solve With Heuristic");
+        heuristicSolve.setLayoutX(25);
+        heuristicSolve.setLayoutY(35);
+        heuristicSolutionPane.getChildren().add(heuristicSolve);
+        heuristicSolve.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent e) {
+                int modelVersion = 0;
+                if (capVersion.isSelected()) {
+                    modelVersion = 1;
+                    controlActions.heuristicSolve(crfValue.getText(), yearValue.getText(), paramValue.getText(),numPairsValue.getText(), modelVersion);
+                } else if (priceVersion.isSelected()) {
+                    modelVersion = 2;
+                    //controlActions.heuristicSolve(crfValue.getText(), yearValue.getText(), paramValue.getText(),numPairsValue.getText(), modelVersion);
+                    controlActions.runPriceSimulation(crfValue.getText(), yearValue.getText(), paramValue.getText(),numPairsValue.getText(), modelVersion);
+                }
+            }
+        });
+        
+        // Populate heuristic solution method pane.
+        TitledPane heuristicSolutionContainer = new TitledPane("Heuristic Solver", heuristicSolutionPane);
+        heuristicSolutionContainer.setCollapsible(false);
+        heuristicSolutionContainer.setPrefSize(192, 92);
+        heuristicSolutionContainer.setLayoutX(14);
+        heuristicSolutionContainer.setLayoutY(260);
+        modelPane.getChildren().add(heuristicSolutionContainer);
 
         // Populate results pane.
         // Build solution selection control.
@@ -527,7 +578,7 @@ public class Gui extends Application {
         resultsContainer.setLayoutX(14);
         resultsContainer.setLayoutY(5);
         resultsPane.getChildren().add(resultsContainer);
-
+        
         // Build solution display area.
         AnchorPane solutionDisplayPane = new AnchorPane();
         solutionDisplayPane.setPrefSize(190, 30);
@@ -535,7 +586,7 @@ public class Gui extends Application {
         solutionDisplayPane.setLayoutX(0);
         solutionDisplayPane.setLayoutY(110);
         resultsPane.getChildren().add(solutionDisplayPane);
-        
+
         // Solution labels.
         Label sources = new Label("Sources:");
         sources.setLayoutX(69);
