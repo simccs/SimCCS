@@ -255,7 +255,14 @@ public class ControlActions {
     public void generateMPSFile(String crf, String numYears, String capacityTarget, int modelVersion) {
         if (scenario != "") {
             System.out.println("Writing MPS File...");
-            MPSWriter.writeMPS("mip.mps", data, Double.parseDouble(crf), Double.parseDouble(numYears), Double.parseDouble(capacityTarget), basePath, dataset, scenario, modelVersion);
+            if (modelVersion == 1) {
+                MPSWriter.writeCapPriceMPS("cap.mps", data, Double.parseDouble(crf), Double.parseDouble(numYears), Double.parseDouble(capacityTarget), basePath, dataset, scenario, modelVersion);
+            } else if (modelVersion == 2) {
+                MPSWriter.writeCapPriceMPS("price.mps", data, Double.parseDouble(crf), Double.parseDouble(numYears), Double.parseDouble(capacityTarget), basePath, dataset, scenario, modelVersion);
+            } else if (modelVersion == 3) {
+                DataInOut.loadTimeConfiguration();
+                MPSWriter.writeTimeMPS("time.mps", data, Double.parseDouble(crf), basePath, dataset, scenario);
+            }
         }
     }
 
@@ -265,26 +272,60 @@ public class ControlActions {
             Runtime r = Runtime.getRuntime();
             r.exec("cplex");
 
+            // Determine model version
+            String mipPath = basePath + "/" + dataset + "/Scenarios/" + scenario + "/MIP/";
+            int modelVersion = 0;   // 1 - cap, 2 - price, 3 - time
+            for (File f : new File(mipPath).listFiles()) {
+                if (f.getName().endsWith(".mps")) {
+                    if (f.getName().startsWith("cap")) {
+                        modelVersion = 1;
+                    } else if (f.getName().startsWith("price")) {
+                        modelVersion = 2;
+                    } else if (f.getName().startsWith("time")) {
+                        modelVersion = 3;
+                    }
+                }
+            }
+
             // Copy mps file and make command files.
             DateFormat dateFormat = new SimpleDateFormat("ddMMyyy-HHmmssss");
             Date date = new Date();
-            String run = "run" + dateFormat.format(date);
+            String run = "";
+            if (modelVersion == 1) {
+                run += "cap";
+            } else if (modelVersion == 2) {
+                run += "price";
+            } else if (modelVersion == 3) {
+                run += "time";
+            }
+            run += dateFormat.format(date);
             File solutionDirectory = new File(basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + run);
+
             String os = System.getProperty("os.name");
             try {
                 solutionDirectory.mkdir();
 
                 // Copy MPS file into results file.
-                String mipPath = basePath + "/" + dataset + "/Scenarios/" + scenario + "/MIP/mip.mps";
+                String mpsFileName = "";
+                if (modelVersion == 1) {
+                    mpsFileName += "cap.mps";
+                } else if (modelVersion == 2) {
+                    mpsFileName += "price.mps";
+                } else if (modelVersion == 3) {
+                    mpsFileName += "time.mps";
+                }
+
+                mipPath += mpsFileName;
+
                 Path from = Paths.get(mipPath);
-                Path to = Paths.get(solutionDirectory + "/mip.mps");
+                Path to = Paths.get(solutionDirectory + "/" + mpsFileName);
                 Files.copy(from, to, StandardCopyOption.REPLACE_EXISTING);
 
                 // Make OS script file and cplex commands file.
                 if (os.toLowerCase().contains("mac")) {
                     PrintWriter cplexCommands = new PrintWriter(solutionDirectory + "/cplexCommands.txt");
                     cplexCommands.println("set logfile *");
-                    cplexCommands.println("read " + solutionDirectory.getAbsolutePath() + "/mip.mps");
+                    cplexCommands.println("read " + solutionDirectory.getAbsolutePath() + "/" + mpsFileName);
                     cplexCommands.println("opt");
                     cplexCommands.println("write " + solutionDirectory.getAbsolutePath() + "/solution.sol");
                     cplexCommands.println("quit");
@@ -298,7 +339,7 @@ public class ControlActions {
                     osCommandsFile.setExecutable(true);
                 } else if (os.toLowerCase().contains("windows")) {
                     PrintWriter cplexCommands = new PrintWriter(solutionDirectory + "/cplexCommands.txt");
-                    cplexCommands.println("read mip.mps");
+                    cplexCommands.println("read " + mpsFileName);
                     cplexCommands.println("opt");
                     cplexCommands.println("write solution.sol");
                     cplexCommands.println("quit");
@@ -310,6 +351,17 @@ public class ControlActions {
                     osCommands.println("cplex < cplexCommands.txt");
                     osCommands.close();
                     osCommandsFile.setExecutable(true);
+                }
+
+                // Make solution sub directories.
+                if (modelVersion == 3) {
+                    // Determine number of timeslots from MPS file.
+                    int numTimeslots = DataInOut.determineNumTimeslots(mipPath);
+
+                    for (int timeslot = 1; timeslot <= numTimeslots; timeslot++) {
+                        File solutionSubDirectory = new File(basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + run + "/timeslot-" + timeslot);
+                        solutionSubDirectory.mkdir();
+                    }
                 }
             } catch (FileNotFoundException e) {
             } catch (IOException e) {
@@ -480,7 +532,7 @@ public class ControlActions {
             // sink capacity.
             // injection cost.
             // STDDEV = 1/4 mean
-            MPSWriter.writeMPS("mip" + i + ".mps", data, Double.parseDouble(crf), Double.parseDouble(numYears), Double.parseDouble(capacityTarget), basePath, dataset, scenario, modelVersion);
+            MPSWriter.writeCapPriceMPS("mip" + i + ".mps", data, Double.parseDouble(crf), Double.parseDouble(numYears), Double.parseDouble(capacityTarget), basePath, dataset, scenario, modelVersion);
         }
         for (int j = 0; j < sinks.length; j++) {
             sinks[j].setCapacity(sinkCapacity[j]);
@@ -488,7 +540,7 @@ public class ControlActions {
         }
     }
 
-    public void initializeSolutionSelection(ChoiceBox solutionChoice) {
+    public void initializeSolutionSelection(ChoiceBox runChoice) {
         if (basePath != "" && dataset != "" && scenario != "") {
             // Set initial datasets.
             File f = new File(basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results");
@@ -512,110 +564,141 @@ public class ControlActions {
                     }
                 }
             }
-            solutionChoice.setItems(FXCollections.observableArrayList(solns));
+            runChoice.setItems(FXCollections.observableArrayList(solns));
         }
     }
 
     public void selectSolution(String file, Label[] solutionValues) {
+        gui.hideSubSolutionMenu();
         solutionLayer.getChildren().clear();
         for (Label l : solutionValues) {
             l.setText("-");
         }
 
         if (file != null && !file.equals("None")) {
-            if (file.endsWith("Agg")) {
-                aggregateSolutions(file, solutionValues);
+            String solutionPath = basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + file;
+            
+            if (file.contains("cap")) {
+                Solution soln = DataInOut.loadSolution(solutionPath, -1);
+                displaySolution(file, soln, solutionValues);
+            } else if (file.contains("price")) {
+                Solution soln = DataInOut.loadSolution(solutionPath, -1);
+                displaySolution(file, soln, solutionValues);
+            } else if (file.contains("time")) {
+                gui.showSubSolutionMenu();
+
+                // Populate sub directory
+                int numTimeslots = DataInOut.determineNumTimeslots(solutionPath + "/time.mps");
+                ArrayList<String> solns = new ArrayList<>();
+                for (int timeslot = 1; timeslot <= numTimeslots; timeslot++) {
+                    solns.add("timeslot-" + timeslot);
+                }
+                gui.getSolutionChoice().setItems(FXCollections.observableArrayList(solns));
             } else {
-                Solution soln = DataInOut.loadSolution(basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + file);
-                HashMap<Edge, int[]> graphEdgeRoutes = data.getGraphEdgeRoutes();
-
-                for (Edge e : soln.getOpenedEdges()) {
-                    int[] route = graphEdgeRoutes.get(e);
-                    for (int src = 0; src < route.length - 1; src++) {
-                        int dest = src + 1;
-                        double[] rawSrc = data.cellLocationToRawXY(route[src]);
-                        double[] rawDest = data.cellLocationToRawXY(route[dest]);
-                        double sX = rawXtoDisplayX(rawSrc[0]);
-                        double sY = rawYtoDisplayY(rawSrc[1]);
-                        double dX = rawXtoDisplayX(rawDest[0]);
-                        double dY = rawYtoDisplayY(rawDest[1]);
-                        Line edge = new Line(sX, sY, dX, dY);
-                        edge.setStroke(Color.GREEN);
-                        edge.setStrokeWidth(5.0 / gui.getScale());
-                        edge.setStrokeLineCap(StrokeLineCap.ROUND);
-                        solutionLayer.getChildren().add(edge);
-                    }
-                }
-
-                for (Source source : soln.getOpenedSources()) {
-                    double[] rawXYLocation = data.cellLocationToRawXY(source.getCellNum());
-                    Circle c = new Circle(rawXtoDisplayX(rawXYLocation[0]), rawYtoDisplayY(rawXYLocation[1]), 20 / gui.getScale());
-                    c.setStrokeWidth(0);
-                    c.setStroke(Color.SALMON);
-                    c.setFill(Color.SALMON);
-                    solutionLayer.getChildren().add(c);
-
-                    // Pie chart nodes.
-                    Arc arc = new Arc();
-                    arc.setCenterX(rawXtoDisplayX(rawXYLocation[0]));
-                    arc.setCenterY(rawYtoDisplayY(rawXYLocation[1]));
-                    arc.setRadiusX(20 / gui.getScale());
-                    arc.setRadiusY(20 / gui.getScale());
-                    arc.setStartAngle(0);
-                    arc.setLength(soln.getPercentCaptured(source) * 360);
-                    arc.setStrokeWidth(0);
-                    arc.setType(ArcType.ROUND);
-                    arc.setStroke(Color.RED);
-                    arc.setFill(Color.RED);
-                    solutionLayer.getChildren().add(arc);
-                }
-
-                for (Sink sink : soln.getOpenedSinks()) {
-                    double[] rawXYLocation = data.cellLocationToRawXY(sink.getCellNum());
-                    Circle c = new Circle(rawXtoDisplayX(rawXYLocation[0]), rawYtoDisplayY(rawXYLocation[1]), 20 / gui.getScale());
-                    c.setStrokeWidth(0);
-                    c.setStroke(Color.CORNFLOWERBLUE);
-                    c.setFill(Color.CORNFLOWERBLUE);
-                    solutionLayer.getChildren().add(c);
-
-                    // Pie chart nodes.
-                    Arc arc = new Arc();
-                    arc.setCenterX(rawXtoDisplayX(rawXYLocation[0]));
-                    arc.setCenterY(rawYtoDisplayY(rawXYLocation[1]));
-                    arc.setRadiusX(20 / gui.getScale());
-                    arc.setRadiusY(20 / gui.getScale());
-                    arc.setStartAngle(0);
-                    arc.setLength(soln.getPercentStored(sink) * 360);
-                    arc.setStrokeWidth(0);
-                    arc.setType(ArcType.ROUND);
-                    arc.setStroke(Color.BLUE);
-                    arc.setFill(Color.BLUE);
-                    solutionLayer.getChildren().add(arc);
-                }
-
-                // Update solution values.
-                solutionValues[0].setText(Integer.toString(soln.getNumOpenedSources()));
-                solutionValues[1].setText(Integer.toString(soln.getNumOpenedSinks()));
-                solutionValues[2].setText(Double.toString(round(soln.getCaptureAmount(), 2)));
-                solutionValues[3].setText(Integer.toString(soln.getNumEdgesOpened()));
-                solutionValues[4].setText(Integer.toString(soln.getProjectLength()));
-                solutionValues[5].setText(Double.toString(round(soln.getTotalAnnualCaptureCost(), 2)));
-                solutionValues[6].setText(Double.toString(round(soln.getUnitCaptureCost(), 2)));
-                solutionValues[7].setText(Double.toString(round(soln.getTotalAnnualTransportCost(), 2)));
-                solutionValues[8].setText(Double.toString(round(soln.getUnitTransportCost(), 2)));
-                solutionValues[9].setText(Double.toString(round(soln.getTotalAnnualStorageCost(), 2)));
-                solutionValues[10].setText(Double.toString(round(soln.getUnitStorageCost(), 2)));
-                solutionValues[11].setText(Double.toString(round(soln.getTotalCost(), 2)));
-                solutionValues[12].setText(Double.toString(round(soln.getUnitTotalCost(), 2)));
-
-                // Write to shapefiles.
-                DataInOut.makeShapeFiles(basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + file, soln);
-                DataInOut.makeCandidateShapeFiles(basePath + "/" + dataset + "/Scenarios/" + scenario);
-                DataInOut.makeSolutionFile(basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + file, soln);
-
-                //determineROW(soln, basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + file);
+                Solution soln = DataInOut.loadSolution(solutionPath, -1);
+                displaySolution(file, soln, solutionValues);
             }
         }
+    }
+
+    public void selectSubSolution(String parent, String solutionName, Label[] solutionValues) {
+        if (solutionName != null && solutionName.contains("timeslot-")) {
+            int timeslot = Integer.parseInt(solutionName.substring(9)) - 1;
+            String solutionPath = basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + parent;
+            Solution soln = DataInOut.loadSolution(solutionPath, timeslot);
+            displaySolution(parent + "/" + solutionName, soln, solutionValues);
+        }
+    }
+
+    public void displaySolution(String file, Solution soln, Label[] solutionValues) {
+        solutionLayer.getChildren().clear();
+        HashMap<Edge, int[]> graphEdgeRoutes = data.getGraphEdgeRoutes();
+
+        for (Edge e : soln.getOpenedEdges()) {
+            int[] route = graphEdgeRoutes.get(e);
+            for (int src = 0; src < route.length - 1; src++) {
+                int dest = src + 1;
+                double[] rawSrc = data.cellLocationToRawXY(route[src]);
+                double[] rawDest = data.cellLocationToRawXY(route[dest]);
+                double sX = rawXtoDisplayX(rawSrc[0]);
+                double sY = rawYtoDisplayY(rawSrc[1]);
+                double dX = rawXtoDisplayX(rawDest[0]);
+                double dY = rawYtoDisplayY(rawDest[1]);
+                Line edge = new Line(sX, sY, dX, dY);
+                edge.setStroke(Color.GREEN);
+                edge.setStrokeWidth(5.0 / gui.getScale());
+                edge.setStrokeLineCap(StrokeLineCap.ROUND);
+                solutionLayer.getChildren().add(edge);
+            }
+        }
+
+        for (Source source : soln.getOpenedSources()) {
+            double[] rawXYLocation = data.cellLocationToRawXY(source.getCellNum());
+            Circle c = new Circle(rawXtoDisplayX(rawXYLocation[0]), rawYtoDisplayY(rawXYLocation[1]), 20 / gui.getScale());
+            c.setStrokeWidth(0);
+            c.setStroke(Color.SALMON);
+            c.setFill(Color.SALMON);
+            solutionLayer.getChildren().add(c);
+
+            // Pie chart nodes.
+            Arc arc = new Arc();
+            arc.setCenterX(rawXtoDisplayX(rawXYLocation[0]));
+            arc.setCenterY(rawYtoDisplayY(rawXYLocation[1]));
+            arc.setRadiusX(20 / gui.getScale());
+            arc.setRadiusY(20 / gui.getScale());
+            arc.setStartAngle(0);
+            arc.setLength(soln.getPercentCaptured(source) * 360);
+            arc.setStrokeWidth(0);
+            arc.setType(ArcType.ROUND);
+            arc.setStroke(Color.RED);
+            arc.setFill(Color.RED);
+            solutionLayer.getChildren().add(arc);
+        }
+
+        for (Sink sink : soln.getOpenedSinks()) {
+            double[] rawXYLocation = data.cellLocationToRawXY(sink.getCellNum());
+            Circle c = new Circle(rawXtoDisplayX(rawXYLocation[0]), rawYtoDisplayY(rawXYLocation[1]), 20 / gui.getScale());
+            c.setStrokeWidth(0);
+            c.setStroke(Color.CORNFLOWERBLUE);
+            c.setFill(Color.CORNFLOWERBLUE);
+            solutionLayer.getChildren().add(c);
+
+            // Pie chart nodes.
+            Arc arc = new Arc();
+            arc.setCenterX(rawXtoDisplayX(rawXYLocation[0]));
+            arc.setCenterY(rawYtoDisplayY(rawXYLocation[1]));
+            arc.setRadiusX(20 / gui.getScale());
+            arc.setRadiusY(20 / gui.getScale());
+            arc.setStartAngle(0);
+            arc.setLength(soln.getPercentStored(sink) * 360);
+            arc.setStrokeWidth(0);
+            arc.setType(ArcType.ROUND);
+            arc.setStroke(Color.BLUE);
+            arc.setFill(Color.BLUE);
+            solutionLayer.getChildren().add(arc);
+        }
+
+        // Update solution values.
+        solutionValues[0].setText(Integer.toString(soln.getNumOpenedSources()));
+        solutionValues[1].setText(Integer.toString(soln.getNumOpenedSinks()));
+        solutionValues[2].setText(Double.toString(round(soln.getCaptureAmount(), 2)));
+        solutionValues[3].setText(Integer.toString(soln.getNumEdgesOpened()));
+        solutionValues[4].setText(Integer.toString(soln.getProjectLength()));
+        solutionValues[5].setText(Double.toString(round(soln.getTotalAnnualCaptureCost(), 2)));
+        solutionValues[6].setText(Double.toString(round(soln.getUnitCaptureCost(), 2)));
+        solutionValues[7].setText(Double.toString(round(soln.getTotalAnnualTransportCost(), 2)));
+        solutionValues[8].setText(Double.toString(round(soln.getUnitTransportCost(), 2)));
+        solutionValues[9].setText(Double.toString(round(soln.getTotalAnnualStorageCost(), 2)));
+        solutionValues[10].setText(Double.toString(round(soln.getUnitStorageCost(), 2)));
+        solutionValues[11].setText(Double.toString(round(soln.getTotalCost(), 2)));
+        solutionValues[12].setText(Double.toString(round(soln.getUnitTotalCost(), 2)));
+
+        // Write to shapefiles.
+        DataInOut.makeShapeFiles(basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + file, soln);
+        DataInOut.makeCandidateShapeFiles(basePath + "/" + dataset + "/Scenarios/" + scenario);
+        DataInOut.makeSolutionFile(basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + file, soln);
+
+        //determineROW(soln, basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + file);
     }
 
     public void determineROW(Solution soln, String path) {
@@ -676,7 +759,7 @@ public class ControlActions {
                         existingRowRoutes.add(newRoute);
                         newRoute = new ArrayList<>();
                         existingROW = false;
-                    } 
+                    }
                     newRoute.add(cell);
                 }
             }
@@ -723,7 +806,7 @@ public class ControlActions {
                 edgeAttributeTable.setType(colNum, DbfTableModel.TYPE_NUMERIC);
             }
         }
-        
+
         for (ArrayList<Integer> route : routes) {
             double[] routeLatLon = new double[route.size() * 2];    // Route cells translated into: lat, lon, lat, lon,...
             for (int i = 0; i < route.size(); i++) {
@@ -758,7 +841,7 @@ public class ControlActions {
         HashMap<Sink, Integer> sinkPopularity = new HashMap<>();
         HashMap<Edge, Integer> edgePopularity = new HashMap<>();
         for (int i = 0; i < 100; i++) {
-            Solution soln = DataInOut.loadSolution(basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + file + "/run" + i);
+            Solution soln = DataInOut.loadSolution(basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + file + "/run" + i, -1);
 
             HashMap<Edge, Double> edgeTransportAmounts = soln.getEdgeTransportAmounts();
             HashMap<Source, Double> sourceCaptureAmounts = soln.getSourceCaptureAmounts();

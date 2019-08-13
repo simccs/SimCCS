@@ -47,6 +47,9 @@ public class DataStorer {
     private HashMap<Edge, Double> graphEdgeRightOfWayCosts;   // Cost for each edge between vertices
     private HashMap<Edge, Double> graphEdgeConstructionCosts;   // Cost for each edge between vertices
     private HashSet<Edge> delaunayPairs;
+    
+    // Configuration data
+    private double[][] timeConfiguration;
 
     private HashMap<Edge, ArrayList<Edge>> sourceSinkRoutes;
 
@@ -438,6 +441,10 @@ public class DataStorer {
         }
         return maxCap;
     }
+    
+    public double[][] getTimeConfiguration() {
+        return timeConfiguration;
+    }
 
     // Data element set methods
     public void setWidth(int width) {
@@ -533,5 +540,9 @@ public class DataStorer {
 
         // Load data from files.
         DataInOut.loadData(basePath, dataset, scenario, this);
+    }
+    
+    public void setTimeConfiguration(double[][] timeConfiguration) {
+        this.timeConfiguration = timeConfiguration;
     }
 }

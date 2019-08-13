@@ -44,7 +44,9 @@ public class Gui extends Application {
     private RadioButton sinkLabeled;
     private RadioButton sinkVisible;
     private RadioButton dispCostSurface;
+    private ChoiceBox runChoice;
     private ChoiceBox solutionChoice;
+    private AnchorPane solutionPane;
 
     @Override
     public void start(Stage stage) {
@@ -141,11 +143,12 @@ public class Gui extends Application {
         scenarioContainer.setLayoutX(14);
         scenarioContainer.setLayoutY(73);
         dataPane.getChildren().add(scenarioContainer);
+        runChoice = new ChoiceBox();
         solutionChoice = new ChoiceBox();
         scenarioChoice.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<String>() {
             @Override
             public void changed(ObservableValue<? extends String> selected, String oldScenario, String newScenario) {
-                controlActions.selectScenario(newScenario, background, solutionChoice);
+                controlActions.selectScenario(newScenario, background, runChoice);
             }
         });
 
@@ -401,6 +404,7 @@ public class Gui extends Application {
         
         RadioButton capVersion = new RadioButton("Cap");
         RadioButton priceVersion = new RadioButton("Price");
+        RadioButton timeVersion = new RadioButton("Time");
         capVersion.setLayoutX(5);
         capVersion.setLayoutY(94);
         formulationPane.getChildren().add(capVersion);
@@ -410,6 +414,7 @@ public class Gui extends Application {
             public void changed(ObservableValue<? extends Boolean> selected, Boolean oldVal, Boolean show) {
                 if (!oldVal) {
                     priceVersion.setSelected(false);
+                    timeVersion.setSelected(false);
                 }
             }
         });
@@ -422,6 +427,20 @@ public class Gui extends Application {
             public void changed(ObservableValue<? extends Boolean> selected, Boolean oldVal, Boolean show) {
                 if (!oldVal) {
                     capVersion.setSelected(false);
+                    timeVersion.setSelected(false);
+                }
+            }
+        });
+        
+        timeVersion.setLayoutX(120);
+        timeVersion.setLayoutY(94);
+        formulationPane.getChildren().add(timeVersion);
+        timeVersion.selectedProperty().addListener(new ChangeListener<Boolean>() {
+            @Override
+            public void changed(ObservableValue<? extends Boolean> selected, Boolean oldVal, Boolean show) {
+                if (!oldVal) {
+                    capVersion.setSelected(false);
+                    priceVersion.setSelected(false);
                 }
             }
         });
@@ -438,6 +457,8 @@ public class Gui extends Application {
                     modelVersion = 1;
                 } else if (priceVersion.isSelected()) {
                     modelVersion = 2;
+                } else if (timeVersion.isSelected()) {
+                    modelVersion = 3;
                 }
                 controlActions.generateMPSFile(crfValue.getText(), yearValue.getText(), capValue.getText(), modelVersion);
             }
@@ -452,14 +473,14 @@ public class Gui extends Application {
         modelPane.getChildren().add(modelContainer);
         
         // Solution pane.
-        AnchorPane solutionPane = new AnchorPane();
-        solutionPane.setPrefSize(192, 100);
-        solutionPane.setMinSize(0, 0);
+        AnchorPane solvePane = new AnchorPane();
+        solvePane.setPrefSize(192, 100);
+        solvePane.setMinSize(0, 0);
         
         Button cplexSolve = new Button("Solve With CPLEX");
         cplexSolve.setLayoutX(28);
         cplexSolve.setLayoutY(5);
-        solutionPane.getChildren().add(cplexSolve);
+        solvePane.getChildren().add(cplexSolve);
         cplexSolve.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent e) {
@@ -470,7 +491,7 @@ public class Gui extends Application {
         Button gatewaySolve = new Button("Solve With Gateway");
         gatewaySolve.setLayoutX(23);
         gatewaySolve.setLayoutY(37);
-        solutionPane.getChildren().add(gatewaySolve);
+        solvePane.getChildren().add(gatewaySolve);
         gatewaySolve.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent e) {
@@ -479,7 +500,7 @@ public class Gui extends Application {
         });
 
         // Populate solution method pane.
-        TitledPane solutionContainer = new TitledPane("Solve Problem", solutionPane);
+        TitledPane solutionContainer = new TitledPane("Solve Problem", solvePane);
         solutionContainer.setCollapsible(false);
         solutionContainer.setPrefSize(192, 97);
         solutionContainer.setLayoutX(14);
@@ -488,133 +509,160 @@ public class Gui extends Application {
 
         // Populate results pane.
         // Build solution selection control.
+        runChoice.setPrefSize(150, 27);
+        runChoice.setLayoutX(20);
+        runChoice.setLayoutY(4);
         solutionChoice.setPrefSize(150, 27);
-        TitledPane resultsContainer = new TitledPane("Load Solution", solutionChoice);
+        solutionChoice.setLayoutX(20);
+        solutionChoice.setLayoutY(35);
+        
+        solutionPane = new AnchorPane();
+        solutionPane.setPrefSize(190, 30);
+        solutionPane.setMinSize(0, 0);
+        solutionPane.getChildren().add(runChoice);
+        
+        TitledPane resultsContainer = new TitledPane("Load Solution", solutionPane);
         resultsContainer.setCollapsible(false);
-        resultsContainer.setPrefSize(192, 63);
+        resultsContainer.setPrefSize(192, 94);
         resultsContainer.setLayoutX(14);
         resultsContainer.setLayoutY(5);
         resultsPane.getChildren().add(resultsContainer);
 
+        // Build solution display area.
+        AnchorPane solutionDisplayPane = new AnchorPane();
+        solutionDisplayPane.setPrefSize(190, 30);
+        solutionDisplayPane.setMinSize(0, 0);
+        solutionDisplayPane.setLayoutX(0);
+        solutionDisplayPane.setLayoutY(110);
+        resultsPane.getChildren().add(solutionDisplayPane);
+        
         // Solution labels.
         Label sources = new Label("Sources:");
         sources.setLayoutX(69);
-        sources.setLayoutY(70);
+        sources.setLayoutY(0);
         Label sourcesValue = new Label("-");
         sourcesValue.setLayoutX(135);
-        sourcesValue.setLayoutY(70);
-        resultsPane.getChildren().addAll(sources, sourcesValue);
+        sourcesValue.setLayoutY(0);
+        solutionDisplayPane.getChildren().addAll(sources, sourcesValue);
 
         Label sinks = new Label("Sinks:");
         sinks.setLayoutX(86);
-        sinks.setLayoutY(90);
+        sinks.setLayoutY(20);
         Label sinksValue = new Label("-");
         sinksValue.setLayoutX(135);
-        sinksValue.setLayoutY(90);
-        resultsPane.getChildren().addAll(sinks, sinksValue);
+        sinksValue.setLayoutY(20);
+        solutionDisplayPane.getChildren().addAll(sinks, sinksValue);
 
         Label stored = new Label("CO2 Stored:");
         stored.setLayoutX(47);
-        stored.setLayoutY(110);
+        stored.setLayoutY(40);
         Label storedValue = new Label("-");
         storedValue.setLayoutX(135);
-        storedValue.setLayoutY(110);
-        resultsPane.getChildren().addAll(stored, storedValue);
+        storedValue.setLayoutY(40);
+        solutionDisplayPane.getChildren().addAll(stored, storedValue);
 
         Label edges = new Label("Edges:");
         edges.setLayoutX(81);
-        edges.setLayoutY(130);
+        edges.setLayoutY(60);
         Label edgesValue = new Label("-");
         edgesValue.setLayoutX(135);
-        edgesValue.setLayoutY(130);
-        resultsPane.getChildren().addAll(edges, edgesValue);
+        edgesValue.setLayoutY(60);
+        solutionDisplayPane.getChildren().addAll(edges, edgesValue);
 
         Label length = new Label("Project Length:");
         length.setLayoutX(30);
-        length.setLayoutY(150);
+        length.setLayoutY(80);
         Label lengthValue = new Label("-");
         lengthValue.setLayoutX(135);
-        lengthValue.setLayoutY(150);
-        resultsPane.getChildren().addAll(length, lengthValue);
+        lengthValue.setLayoutY(80);
+        solutionDisplayPane.getChildren().addAll(length, lengthValue);
 
         Label total = new Label("Total Cost\n   ($m/yr)");
         total.setLayoutX(65);
-        total.setLayoutY(190);
+        total.setLayoutY(120);
         Label unit = new Label("Unit Cost\n ($/tCO2)");
         unit.setLayoutX(150);
-        unit.setLayoutY(190);
-        resultsPane.getChildren().addAll(total, unit);
+        unit.setLayoutY(120);
+        solutionDisplayPane.getChildren().addAll(total, unit);
 
         Label cap = new Label("Capture:");
         cap.setLayoutX(4);
-        cap.setLayoutY(230);
+        cap.setLayoutY(160);
         Label capT = new Label("-");
         capT.setLayoutX(75);
-        capT.setLayoutY(230);
+        capT.setLayoutY(160);
         Label capU = new Label("-");
         capU.setLayoutX(160);
-        capU.setLayoutY(230);
-        resultsPane.getChildren().addAll(cap, capT, capU);
+        capU.setLayoutY(160);
+        solutionDisplayPane.getChildren().addAll(cap, capT, capU);
 
         Label trans = new Label("Transport:");
         trans.setLayoutX(4);
-        trans.setLayoutY(250);
+        trans.setLayoutY(180);
         Label transT = new Label("-");
         transT.setLayoutX(75);
-        transT.setLayoutY(250);
+        transT.setLayoutY(180);
         Label transU = new Label("-");
         transU.setLayoutX(160);
-        transU.setLayoutY(250);
-        resultsPane.getChildren().addAll(trans, transT, transU);
+        transU.setLayoutY(180);
+        solutionDisplayPane.getChildren().addAll(trans, transT, transU);
 
         Label stor = new Label("Storage:");
         stor.setLayoutX(4);
-        stor.setLayoutY(270);
+        stor.setLayoutY(200);
         Label storT = new Label("-");
         storT.setLayoutX(75);
-        storT.setLayoutY(270);
+        storT.setLayoutY(200);
         Label storU = new Label("-");
         storU.setLayoutX(160);
-        storU.setLayoutY(270);
-        resultsPane.getChildren().addAll(stor, storT, storU);
+        storU.setLayoutY(200);
+        solutionDisplayPane.getChildren().addAll(stor, storT, storU);
 
         Label tot = new Label("Total:");
         tot.setLayoutX(4);
-        tot.setLayoutY(290);
+        tot.setLayoutY(220);
         Label totT = new Label("-");
         totT.setLayoutX(75);
-        totT.setLayoutY(290);
+        totT.setLayoutY(220);
         Label totU = new Label("-");
         totU.setLayoutX(160);
-        totU.setLayoutY(290);
-        resultsPane.getChildren().addAll(tot, totT, totU);
+        totU.setLayoutY(220);
+        solutionDisplayPane.getChildren().addAll(tot, totT, totU);
 
         Label[] solutionValues = new Label[]{sourcesValue, sinksValue, storedValue, edgesValue, lengthValue, capT, capU, transT, transU, storT, storU, totT, totU};
 
-        // Solution selection action.
-        solutionChoice.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<String>() {
+        // Run selection action.
+        runChoice.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<String>() {
             @Override
             public void changed(ObservableValue<? extends String> selected, String oldSolution, String newSolution) {
                 controlActions.selectSolution(newSolution, solutionValues);
             }
         });
-        solutionChoice.showingProperty().addListener((obs, wasShowing, isShowing) -> {
+        runChoice.showingProperty().addListener((obs, wasShowing, isShowing) -> {
             if (isShowing) {
-                controlActions.initializeSolutionSelection(solutionChoice);
+                controlActions.initializeSolutionSelection(runChoice);
             }
         });
-        solutionChoice.setOnScroll(new EventHandler<ScrollEvent>() {
+        runChoice.setOnScroll(new EventHandler<ScrollEvent>() {
             @Override
             public void handle(ScrollEvent s) {
                 double direction = s.getDeltaY();
-                String currentChoice = (String) solutionChoice.getValue();
-                ObservableList<String> choices = solutionChoice.getItems();
+                String currentChoice = (String) runChoice.getValue();
+                ObservableList<String> choices = runChoice.getItems();
                 int index = choices.indexOf(currentChoice);
                 if (direction < 0 && index < choices.size() - 1) {
-                    solutionChoice.setValue(choices.get(index + 1));
+                    runChoice.setValue(choices.get(index + 1));
                 } else if (direction > 0 && index > 0) {
-                    solutionChoice.setValue(choices.get(index - 1));
+                    runChoice.setValue(choices.get(index - 1));
                 }
+            }
+        });
+        
+        // Solution sub directory selection action.
+        solutionChoice.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<String>() {
+            @Override
+            public void changed(ObservableValue<? extends String> selected, String oldSolution, String newSolution) {
+                controlActions.selectSubSolution((String) runChoice.getValue(), newSolution, solutionValues);
             }
         });
 
@@ -626,6 +674,18 @@ public class Gui extends Application {
         // Add everything to group and display.
         group.getChildren().addAll(displayPane, tabPane, messengerPane);
         return new Scene(group, 1050, 660);
+    }
+    
+    public void showSubSolutionMenu() {
+        solutionPane.getChildren().add(solutionChoice);
+    }
+    
+    public void hideSubSolutionMenu() {
+        solutionPane.getChildren().remove(solutionChoice);
+    }
+    
+    public ChoiceBox getSolutionChoice() {
+        return solutionChoice;
     }
 
     public void displayCostSurface() {
@@ -642,7 +702,6 @@ public class Gui extends Application {
         sinkLabeled.setSelected(false);
         sinkVisible.setSelected(false);
         dispCostSurface.setSelected(false);
-        solutionChoice.setValue("None");
     }
     
     public void softReset() {

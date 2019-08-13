@@ -159,7 +159,7 @@ public class DataInOut {
         } catch (IOException e) {
             rightOfWayCosts = null;
         }
-        
+
         // Load routing costs.
         path = basePath + "/" + dataset + "/BaseData/CostNetwork/Routing Costs.txt";
         try (BufferedReader br = new BufferedReader(new FileReader(path))) {
@@ -188,7 +188,7 @@ public class DataInOut {
                 }
             }
         }
-        
+
         data.setConstructionCosts(constructionCosts);
         data.setRightOfWayCosts(rightOfWayCosts);
         data.setRoutingCosts(routingCosts);
@@ -436,6 +436,39 @@ public class DataInOut {
         }
     }
 
+    public static void loadTimeConfiguration() {
+        // Check if file exists
+        String timeConfigurationPath = basePath + "/" + dataset + "/Scenarios/" + scenario + "/timeInput.csv";
+        if (new File(timeConfigurationPath).exists()) {
+            // Load from file.
+            try (BufferedReader br = new BufferedReader(new FileReader(timeConfigurationPath))) {
+                ArrayList<double[]> timeEntries = new ArrayList<>();
+                br.readLine();
+                String line = br.readLine();
+                while (line != null) {
+                    String[] elements = line.split(",");
+                    double timeslot = Double.parseDouble(elements[0]);
+                    double numYears = Double.parseDouble(elements[1]);
+                    double capTarget = Double.parseDouble(elements[2]);
+
+                    timeEntries.add(new double[]{timeslot, numYears, capTarget});
+                    line = br.readLine();
+                }
+
+                // Store time configuration
+                double[][] timeConfiguration = new double[timeEntries.size()][3];
+                for (int i = 0; i < timeEntries.size(); i++) {
+                    timeConfiguration[i] = timeEntries.get(i);
+                }
+                data.setTimeConfiguration(timeConfiguration);
+            } catch (IOException e) {
+                System.out.println(e.getMessage());
+            }
+        } else {
+            System.out.println("No time configuration file.");
+        }
+    }
+
     public static void saveShortestPathsNetwork() {
         int[][] shortestPaths = data.getShortestPaths();
         double[] shortestPathCosts = data.getShortestPathCosts();
@@ -511,7 +544,7 @@ public class DataInOut {
         }
     }
 
-    public static Solution loadSolution(String solutionPath) {
+    public static Solution loadSolution(String solutionPath, int timeslot) {
         double threshold = .000001;
         Solution soln = new Solution();
 
@@ -567,13 +600,25 @@ public class DataInOut {
                 if (Double.parseDouble(variable[2]) > threshold) {
                     variableValues.put(variable[0], Double.parseDouble(variable[2]));
                     String[] components = variable[0].split("\\]\\[|\\[|\\]");
-                    if (components[0].equals("a")) {
-                        soln.addSourceCaptureAmount(sources[Integer.parseInt(components[1])], Double.parseDouble(variable[2]));
-                    } else if (components[0].equals("b")) {
-                        soln.addSinkStorageAmount(sinks[Integer.parseInt(components[1])], Double.parseDouble(variable[2]));
-                    } else if (components[0].equals("p")) {
-                        soln.addEdgeTransportAmount(new Edge(vertexIndexToCell.get(Integer.parseInt(components[1])), vertexIndexToCell.get(Integer.parseInt(components[2]))), Double.parseDouble(variable[2]));
-                    } else if (variable[0].equals("crf")) {
+                    if (timeslot == -1) {
+                        if (components[0].equals("a")) {
+                            soln.addSourceCaptureAmount(sources[Integer.parseInt(components[1])], Double.parseDouble(variable[2]));
+                        } else if (components[0].equals("b")) {
+                            soln.addSinkStorageAmount(sinks[Integer.parseInt(components[1])], Double.parseDouble(variable[2]));
+                        } else if (components[0].equals("p")) {
+                            soln.addEdgeTransportAmount(new Edge(vertexIndexToCell.get(Integer.parseInt(components[1])), vertexIndexToCell.get(Integer.parseInt(components[2]))), Double.parseDouble(variable[2]));
+                        }
+                    } else {
+                        if (components[0].equals("a") && (Integer.parseInt(components[2]) == timeslot)) {
+                            soln.addSourceCaptureAmount(sources[Integer.parseInt(components[1])], Double.parseDouble(variable[2]));
+                        } else if (components[0].equals("b") && (Integer.parseInt(components[2]) == timeslot)) {
+                            soln.addSinkStorageAmount(sinks[Integer.parseInt(components[1])], Double.parseDouble(variable[2]));
+                        } else if (components[0].equals("p") && (Integer.parseInt(components[4]) == timeslot)) {
+                            soln.addEdgeTransportAmount(new Edge(vertexIndexToCell.get(Integer.parseInt(components[1])), vertexIndexToCell.get(Integer.parseInt(components[2]))), Double.parseDouble(variable[2]));
+                        }
+                    }
+
+                    if (variable[0].equals("crf")) {
                         soln.setCRF(Double.parseDouble(variable[2]));
                     } else if (variable[0].equals("projectLength")) {
                         soln.setProjectLength(Integer.parseInt(variable[2]));
@@ -597,15 +642,28 @@ public class DataInOut {
                 String[] column = line.replaceFirst("\\s+", "").split("\\s+");
                 if (column[1].equals("OBJ") && variableValues.keySet().contains(column[0])) {
                     String[] components = column[0].split("\\]\\[|\\[|\\]");
-                    if (column[0].charAt(0) == 's' || column[0].charAt(0) == 'a') {
-                        double cost = variableValues.get(column[0]) * Double.parseDouble(column[2]);
-                        soln.addSourceCostComponent(sources[Integer.parseInt(components[1])], cost);
-                    } else if (column[0].charAt(0) == 'r' || column[0].charAt(0) == 'w' || column[0].charAt(0) == 'b') {
-                        double cost = variableValues.get(column[0]) * Double.parseDouble(column[2]);
-                        soln.addSinkCostComponent(sinks[Integer.parseInt(components[1])], cost);
-                    } else if (column[0].charAt(0) == 'p' || column[0].charAt(0) == 'y') {
-                        double cost = variableValues.get(column[0]) * Double.parseDouble(column[2]);
-                        soln.addEdgeCostComponent(new Edge(vertexIndexToCell.get(Integer.parseInt(components[1])), vertexIndexToCell.get(Integer.parseInt(components[2]))), cost);
+                    if (timeslot == -1) {
+                        if (column[0].charAt(0) == 's' || column[0].charAt(0) == 'a') {
+                            double cost = variableValues.get(column[0]) * Double.parseDouble(column[2]);
+                            soln.addSourceCostComponent(sources[Integer.parseInt(components[1])], cost);
+                        } else if (column[0].charAt(0) == 'r' || column[0].charAt(0) == 'w' || column[0].charAt(0) == 'b') {
+                            double cost = variableValues.get(column[0]) * Double.parseDouble(column[2]);
+                            soln.addSinkCostComponent(sinks[Integer.parseInt(components[1])], cost);
+                        } else if (column[0].charAt(0) == 'p' || column[0].charAt(0) == 'y') {
+                            double cost = variableValues.get(column[0]) * Double.parseDouble(column[2]);
+                            soln.addEdgeCostComponent(new Edge(vertexIndexToCell.get(Integer.parseInt(components[1])), vertexIndexToCell.get(Integer.parseInt(components[2]))), cost);
+                        }
+                    } else {
+                        if ((column[0].charAt(0) == 's' || column[0].charAt(0) == 'a') && (Integer.parseInt(components[2]) == timeslot)) {
+                            double cost = variableValues.get(column[0]) * Double.parseDouble(column[2]);
+                            soln.addSourceCostComponent(sources[Integer.parseInt(components[1])], cost);
+                        } else if ((column[0].charAt(0) == 'r' || column[0].charAt(0) == 'w' || column[0].charAt(0) == 'b') && (Integer.parseInt(components[2]) == timeslot)) {
+                            double cost = variableValues.get(column[0]) * Double.parseDouble(column[2]);
+                            soln.addSinkCostComponent(sinks[Integer.parseInt(components[1])], cost);
+                        } else if ((column[0].charAt(0) == 'p' || column[0].charAt(0) == 'y') && (Integer.parseInt(components[4]) == timeslot)) {
+                            double cost = variableValues.get(column[0]) * Double.parseDouble(column[2]);
+                            soln.addEdgeCostComponent(new Edge(vertexIndexToCell.get(Integer.parseInt(components[1])), vertexIndexToCell.get(Integer.parseInt(components[2]))), cost);
+                        }
                     }
                 }
                 line = br.readLine();
@@ -615,6 +673,33 @@ public class DataInOut {
         }
 
         return soln;
+    }
+
+    public static int determineNumTimeslots(String mpsFilePath) {
+        File mpsFile = new File(mpsFilePath);
+        HashSet<Integer> timeslots = new HashSet<>();
+
+        try (BufferedReader br = new BufferedReader(new FileReader(mpsFile))) {
+            String line = br.readLine();
+            while (!line.equals("COLUMNS")) {
+                line = br.readLine();
+            }
+            br.readLine();
+            line = br.readLine();
+
+            while (!line.equals("RHS")) {
+                String[] column = line.replaceFirst("\\s+", "").split("\\s+");
+                if (column[0].charAt(0) == 'a') {
+                    String[] components = column[0].split("\\]\\[|\\[|\\]");
+                    timeslots.add(Integer.parseInt(components[2]));
+                }
+                line = br.readLine();
+            }
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+        }
+
+        return timeslots.size();
     }
 
     private static String[] split(String variable) {
