@@ -6,6 +6,7 @@ import dataStore.LinearComponent;
 import dataStore.Sink;
 import dataStore.Source;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashMap;
@@ -363,7 +364,7 @@ public class MPSWriter {
 
         makeFile(fileName, basePath, dataset, scenario, intVariableToConstraints, contVariableToConstraints, constraintToSign, constraintRHS, variableBounds);
     }
-    
+
     public static void writeTimeMPS(String fileName, DataStorer data, double crf, String basePath, String dataset, String scenario) {
         // Collect data
         Source[] sources = data.getSources();
@@ -772,8 +773,18 @@ public class MPSWriter {
         // End file.
         problemFormulation.append("ENDATA");
 
+        // Clear mip directory.
+        String mipDirectory = basePath + "/" + dataset + "/Scenarios/" + scenario + "/MIP/";
+        File mipFolder = new File(mipDirectory);
+        File[] mips = mipFolder.listFiles();
+        if (mips != null) {
+            for (File mip : mips) {
+                mip.delete();
+            }
+        }
+        
         // Save to file.
-        String mipPath = basePath + "/" + dataset + "/Scenarios/" + scenario + "/MIP/" + fileName;
+        String mipPath = mipDirectory + fileName;
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(mipPath))) {
             bw.write(problemFormulation.toString());
         } catch (IOException e) {
