@@ -269,7 +269,7 @@ public class ControlActions {
                 MPSWriter.writeCapPriceMPS("price.mps", data, Double.parseDouble(crf), Double.parseDouble(numYears), Double.parseDouble(capacityTarget), basePath, dataset, scenario, modelVersion);
             } else if (modelVersion == 3) {
                 DataInOut.loadTimeConfiguration();
-                MPSWriter.writeTimeMPS("time.mps", data, Double.parseDouble(crf), basePath, dataset, scenario);
+                MPSWriter.writeSimpleTimeMPS("time.mps", data, Double.parseDouble(crf), basePath, dataset, scenario);
             }
         }
     }

@@ -365,7 +365,7 @@ public class MPSWriter {
         makeFile(fileName, basePath, dataset, scenario, intVariableToConstraints, contVariableToConstraints, constraintToSign, constraintRHS, variableBounds);
     }
 
-    public static void writeTimeMPS(String fileName, DataStorer data, double crf, String basePath, String dataset, String scenario) {
+    public static void writeSimpleTimeMPS(String fileName, DataStorer data, double crf, String basePath, String dataset, String scenario) {
         // Collect data
         Source[] sources = data.getSources();
         Sink[] sinks = data.getSinks();
@@ -415,15 +415,6 @@ public class MPSWriter {
 
         // Build model
         // Make variables
-        // Source openings
-        String[][] s = new String[sources.length][timeConfiguration.length];
-        for (int i = 0; i < sources.length; i++) {
-            for (int t = 0; t < timeConfiguration.length; t++) {
-                s[i][t] = "s[" + i + "][" + t + "]";
-                variableBounds.put(s[i][t], new VariableBound("UP", 1));
-            }
-        }
-
         // Capture amounts
         String[][] a = new String[sources.length][timeConfiguration.length];
         for (int i = 0; i < sources.length; i++) {
@@ -432,29 +423,11 @@ public class MPSWriter {
             }
         }
 
-        // Reservoir openings
-        String[][] r = new String[sinks.length][timeConfiguration.length];
-        for (int i = 0; i < sinks.length; i++) {
-            for (int t = 0; t < timeConfiguration.length; t++) {
-                r[i][t] = "r[" + i + "][" + t + "]";
-                variableBounds.put(r[i][t], new VariableBound("UP", 1));
-            }
-        }
-
         // Injection amounts
         String[][] b = new String[sinks.length][timeConfiguration.length];
         for (int i = 0; i < sinks.length; i++) {
             for (int t = 0; t < timeConfiguration.length; t++) {
                 b[i][t] = "b[" + i + "][" + t + "]";
-            }
-        }
-
-        // Well openings
-        String[][] w = new String[sinks.length][timeConfiguration.length];
-        for (int i = 0; i < sinks.length; i++) {
-            for (int t = 0; t < timeConfiguration.length; t++) {
-                w[i][t] = "w[" + i + "][" + t + "]";
-                variableBounds.put(w[i][t], new VariableBound("LI", 0));
             }
         }
 
@@ -578,63 +551,13 @@ public class MPSWriter {
             for (int t = 0; t < timeConfiguration.length; t++) {
                 String constraint = "C" + constraintCounter++;
 
-                for (int tau = 0; tau <= t; tau++) {
-                    if (!intVariableToConstraints.containsKey(s[sourceCellToIndex.get(src)][tau])) {
-                        intVariableToConstraints.put(s[sourceCellToIndex.get(src)][tau], new HashSet<ConstraintTerm>());
-                    }
-                    intVariableToConstraints.get(s[sourceCellToIndex.get(src)][tau]).add(new ConstraintTerm(constraint, src.getProductionRate()));
-                }
-
                 if (!contVariableToConstraints.containsKey(a[sourceCellToIndex.get(src)][t])) {
                     contVariableToConstraints.put(a[sourceCellToIndex.get(src)][t], new HashSet<ConstraintTerm>());
                 }
-                contVariableToConstraints.get(a[sourceCellToIndex.get(src)][t]).add(new ConstraintTerm(constraint, -1));
+                contVariableToConstraints.get(a[sourceCellToIndex.get(src)][t]).add(new ConstraintTerm(constraint, 1));
                 constraintToSign.put(constraint, "G");
-                //constraintRHS.put(constraint, 0.0);
-            }
-        }
 
-        // Well injection capped by max injectivity
-        constraintCounter = 1;
-        for (Sink snk : sinks) {
-            for (int t = 0; t < timeConfiguration.length; t++) {
-                String constraint = "D" + constraintCounter++;
-
-                for (int tau = 0; tau <= t; tau++) {
-                    if (!intVariableToConstraints.containsKey(w[sinkCellToIndex.get(snk)][tau])) {
-                        intVariableToConstraints.put(w[sinkCellToIndex.get(snk)][tau], new HashSet<ConstraintTerm>());
-                    }
-                    intVariableToConstraints.get(w[sinkCellToIndex.get(snk)][tau]).add(new ConstraintTerm(constraint, snk.getWellCapacity()));
-                }
-
-                if (!contVariableToConstraints.containsKey(b[sinkCellToIndex.get(snk)][t])) {
-                    contVariableToConstraints.put(b[sinkCellToIndex.get(snk)][t], new HashSet<ConstraintTerm>());
-                }
-                contVariableToConstraints.get(b[sinkCellToIndex.get(snk)][t]).add(new ConstraintTerm(constraint, -1));
-                constraintToSign.put(constraint, "G");
-                //constraintRHS.put(constraint, 0.0);
-            }
-        }
-
-        // Open reservoir before injecting
-        constraintCounter = 1;
-        for (Sink snk : sinks) {
-            for (int t = 0; t < timeConfiguration.length; t++) {
-                String constraint = "E" + constraintCounter++;
-
-                for (int tau = 0; tau <= t; tau++) {
-                    if (!intVariableToConstraints.containsKey(r[sinkCellToIndex.get(snk)][tau])) {
-                        intVariableToConstraints.put(r[sinkCellToIndex.get(snk)][tau], new HashSet<ConstraintTerm>());
-                    }
-                    intVariableToConstraints.get(r[sinkCellToIndex.get(snk)][tau]).add(new ConstraintTerm(constraint, snk.getCapacity()));
-                }
-
-                if (!contVariableToConstraints.containsKey(b[sinkCellToIndex.get(snk)][t])) {
-                    contVariableToConstraints.put(b[sinkCellToIndex.get(snk)][t], new HashSet<ConstraintTerm>());
-                }
-                contVariableToConstraints.get(b[sinkCellToIndex.get(snk)][t]).add(new ConstraintTerm(constraint, -1));
-                constraintToSign.put(constraint, "G");
-                //constraintRHS.put(constraint, 0.0);
+                constraintRHS.put(constraint, src.getProductionRate());
             }
         }
 
@@ -678,15 +601,10 @@ public class MPSWriter {
         String constraint = "OBJ";
         for (Source src : sources) {
             for (int t = 0; t < timeConfiguration.length; t++) {
-                if (!intVariableToConstraints.containsKey(s[sourceCellToIndex.get(src)][t])) {
-                    intVariableToConstraints.put(s[sourceCellToIndex.get(src)][t], new HashSet<ConstraintTerm>());
-                }
-                intVariableToConstraints.get(s[sourceCellToIndex.get(src)][t]).add(new ConstraintTerm(constraint, src.getOpeningCost(crf)));
-
                 if (!contVariableToConstraints.containsKey(a[sourceCellToIndex.get(src)][t])) {
                     contVariableToConstraints.put(a[sourceCellToIndex.get(src)][t], new HashSet<ConstraintTerm>());
                 }
-                contVariableToConstraints.get(a[sourceCellToIndex.get(src)][t]).add(new ConstraintTerm(constraint, src.getCaptureCost())); // * timeConfiguration[t][1]));
+                contVariableToConstraints.get(a[sourceCellToIndex.get(src)][t]).add(new ConstraintTerm(constraint, src.getCaptureCost()));
             }
         }
 
@@ -712,20 +630,10 @@ public class MPSWriter {
 
         for (Sink snk : sinks) {
             for (int t = 0; t < timeConfiguration.length; t++) {
-                if (!intVariableToConstraints.containsKey(r[sinkCellToIndex.get(snk)][t])) {
-                    intVariableToConstraints.put(r[sinkCellToIndex.get(snk)][t], new HashSet<ConstraintTerm>());
-                }
-                intVariableToConstraints.get(r[sinkCellToIndex.get(snk)][t]).add(new ConstraintTerm(constraint, snk.getOpeningCost(crf)));
-
-                if (!intVariableToConstraints.containsKey(w[sinkCellToIndex.get(snk)][t])) {
-                    intVariableToConstraints.put(w[sinkCellToIndex.get(snk)][t], new HashSet<ConstraintTerm>());
-                }
-                intVariableToConstraints.get(w[sinkCellToIndex.get(snk)][t]).add(new ConstraintTerm(constraint, snk.getWellOpeningCost(crf)));
-
                 if (!contVariableToConstraints.containsKey(b[sinkCellToIndex.get(snk)][t])) {
                     contVariableToConstraints.put(b[sinkCellToIndex.get(snk)][t], new HashSet<ConstraintTerm>());
                 }
-                contVariableToConstraints.get(b[sinkCellToIndex.get(snk)][t]).add(new ConstraintTerm(constraint, snk.getInjectionCost())); // * timeConfiguration[t][1]));
+                contVariableToConstraints.get(b[sinkCellToIndex.get(snk)][t]).add(new ConstraintTerm(constraint, snk.getInjectionCost()));
             }
         }
 
@@ -782,7 +690,7 @@ public class MPSWriter {
                 mip.delete();
             }
         }
-        
+
         // Save to file.
         String mipPath = mipDirectory + fileName;
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(mipPath))) {
