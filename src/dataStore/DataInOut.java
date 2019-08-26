@@ -469,7 +469,7 @@ public class DataInOut {
     
     public static void loadTimeConfiguration() {
         // Check if file exists
-        String timeConfigurationPath = basePath + "/" + dataset + "/Scenarios/" + scenario + "/Configuartions/timeInput.csv";
+        String timeConfigurationPath = basePath + "/" + dataset + "/Scenarios/" + scenario + "/Configurations/timeInput.csv";
         if (new File(timeConfigurationPath).exists()) {
             // Load from file.
             try (BufferedReader br = new BufferedReader(new FileReader(timeConfigurationPath))) {
