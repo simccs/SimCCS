@@ -390,6 +390,11 @@ public class MPSWriter {
         HashMap<String, String> constraintToSign = new HashMap<>();
         HashMap<String, Double> constraintRHS = new HashMap<>();
         HashMap<String, VariableBound> variableBounds = new HashMap<>();
+        
+        double totalTime = 0;
+        for (double[] timeConfig : timeConfiguration) {
+            totalTime += timeConfig[1];
+        }
 
         // Set pipe capacity factor if right of way costs are provided.
         double pipeUtilization = 1.0;
@@ -564,7 +569,7 @@ public class MPSWriter {
         // Storage capped by max capacity
         constraintCounter = 1;
         for (Sink snk : sinks) {
-            String constraint = "F" + constraintCounter++;
+            String constraint = "D" + constraintCounter++;
 
             for (int t = 0; t < timeConfiguration.length; t++) {
                 if (!contVariableToConstraints.containsKey(b[sinkCellToIndex.get(snk)][t])) {
@@ -579,7 +584,7 @@ public class MPSWriter {
         // Set amount of CO2 to capture
         constraintCounter = 1;
         for (int t = 0; t < timeConfiguration.length; t++) {
-            String constraint = "G" + constraintCounter++;
+            String constraint = "E" + constraintCounter++;
 
             for (Source src : sources) {
                 if (!contVariableToConstraints.containsKey(a[sourceCellToIndex.get(src)][t])) {
@@ -604,7 +609,7 @@ public class MPSWriter {
                 if (!contVariableToConstraints.containsKey(a[sourceCellToIndex.get(src)][t])) {
                     contVariableToConstraints.put(a[sourceCellToIndex.get(src)][t], new HashSet<ConstraintTerm>());
                 }
-                contVariableToConstraints.get(a[sourceCellToIndex.get(src)][t]).add(new ConstraintTerm(constraint, src.getCaptureCost()));
+                contVariableToConstraints.get(a[sourceCellToIndex.get(src)][t]).add(new ConstraintTerm(constraint, src.getCaptureCost() * timeConfiguration[t][1] / totalTime));
             }
         }
 
@@ -612,17 +617,22 @@ public class MPSWriter {
             for (int neighbor : neighbors.get(vertex)) {
                 for (int c = 0; c < linearComponents.length; c++) {
                     for (int t = 0; t < timeConfiguration.length; t++) {
+                        double remainingTime = 0;
+                        for (int tau = t; tau < timeConfiguration.length; tau++) {
+                            remainingTime += timeConfiguration[tau][1];
+                        }
+                        
                         if (!intVariableToConstraints.containsKey(y[vertexCellToIndex.get(vertex)][vertexCellToIndex.get(neighbor)][c][t])) {
                             intVariableToConstraints.put(y[vertexCellToIndex.get(vertex)][vertexCellToIndex.get(neighbor)][c][t], new HashSet<ConstraintTerm>());
                         }
                         double coefficient = (linearComponents[c].getConIntercept() * edgeConstructionCosts.get(new Edge(vertex, neighbor)) + linearComponents[c].getRowIntercept() * edgeRightOfWayCosts.get(new Edge(vertex, neighbor))) * crf;
-                        intVariableToConstraints.get(y[vertexCellToIndex.get(vertex)][vertexCellToIndex.get(neighbor)][c][t]).add(new ConstraintTerm(constraint, coefficient));
+                        intVariableToConstraints.get(y[vertexCellToIndex.get(vertex)][vertexCellToIndex.get(neighbor)][c][t]).add(new ConstraintTerm(constraint, coefficient * remainingTime / totalTime));
 
                         if (!contVariableToConstraints.containsKey(p[vertexCellToIndex.get(vertex)][vertexCellToIndex.get(neighbor)][c][t])) {
                             contVariableToConstraints.put(p[vertexCellToIndex.get(vertex)][vertexCellToIndex.get(neighbor)][c][t], new HashSet<ConstraintTerm>());
                         }
                         coefficient = (linearComponents[c].getConSlope() * edgeConstructionCosts.get(new Edge(vertex, neighbor)) + linearComponents[c].getRowSlope() * edgeRightOfWayCosts.get(new Edge(vertex, neighbor))) * crf / pipeUtilization;
-                        contVariableToConstraints.get(p[vertexCellToIndex.get(vertex)][vertexCellToIndex.get(neighbor)][c][t]).add(new ConstraintTerm(constraint, coefficient));
+                        contVariableToConstraints.get(p[vertexCellToIndex.get(vertex)][vertexCellToIndex.get(neighbor)][c][t]).add(new ConstraintTerm(constraint, coefficient * timeConfiguration[t][1] / totalTime));
                     }
                 }
             }
@@ -633,7 +643,7 @@ public class MPSWriter {
                 if (!contVariableToConstraints.containsKey(b[sinkCellToIndex.get(snk)][t])) {
                     contVariableToConstraints.put(b[sinkCellToIndex.get(snk)][t], new HashSet<ConstraintTerm>());
                 }
-                contVariableToConstraints.get(b[sinkCellToIndex.get(snk)][t]).add(new ConstraintTerm(constraint, snk.getInjectionCost()));
+                contVariableToConstraints.get(b[sinkCellToIndex.get(snk)][t]).add(new ConstraintTerm(constraint, snk.getInjectionCost() * timeConfiguration[t][1] / totalTime));
             }
         }
 
