@@ -774,7 +774,7 @@ public class ControlActions {
         // Update solution values.
         solutionValues[0].setText(Integer.toString(soln.getNumOpenedSources()));
         solutionValues[1].setText(Integer.toString(soln.getNumOpenedSinks()));
-        solutionValues[2].setText(Double.toString(round(soln.getCaptureAmount(), 2)));
+        solutionValues[2].setText(Double.toString(round(soln.getAnnualCaptureAmount(), 2)));
         solutionValues[3].setText(Integer.toString(soln.getNumEdgesOpened()));
         solutionValues[4].setText(Integer.toString(soln.getProjectLength()));
         solutionValues[5].setText(Double.toString(round(soln.getTotalAnnualCaptureCost(), 2)));

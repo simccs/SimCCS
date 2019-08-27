@@ -604,8 +604,8 @@ public class Gui extends Application {
         sinksValue.setLayoutY(20);
         solutionDisplayPane.getChildren().addAll(sinks, sinksValue);
 
-        Label stored = new Label("CO2 Stored:");
-        stored.setLayoutX(47);
+        Label stored = new Label("Annual CO2 Stored:");
+        stored.setLayoutX(2);
         stored.setLayoutY(40);
         Label storedValue = new Label("-");
         storedValue.setLayoutX(135);
