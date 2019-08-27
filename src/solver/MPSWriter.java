@@ -560,7 +560,7 @@ public class MPSWriter {
                     contVariableToConstraints.put(a[sourceCellToIndex.get(src)][t], new HashSet<ConstraintTerm>());
                 }
                 contVariableToConstraints.get(a[sourceCellToIndex.get(src)][t]).add(new ConstraintTerm(constraint, 1));
-                constraintToSign.put(constraint, "G");
+                constraintToSign.put(constraint, "L");
 
                 constraintRHS.put(constraint, src.getProductionRate());
             }
