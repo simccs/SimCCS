@@ -748,7 +748,7 @@ public class DataInOut {
                             soln.addSourceCaptureAmount(sources[Integer.parseInt(components[1])], Double.parseDouble(variable[2]));
                         } else if (components[0].equals("b") && (Integer.parseInt(components[2]) == timeslot)) {
                             soln.addSinkStorageAmount(sinks[Integer.parseInt(components[1])], Double.parseDouble(variable[2]));
-                        } else if (components[0].equals("p") && (Integer.parseInt(components[4]) == timeslot)) {
+                        } else if (components[0].equals("x") && (Integer.parseInt(components[4]) == timeslot)) {
                             soln.addEdgeTransportAmount(new Edge(vertexIndexToCell.get(Integer.parseInt(components[1])), vertexIndexToCell.get(Integer.parseInt(components[2]))), Double.parseDouble(variable[2]));
                         }
                     }
