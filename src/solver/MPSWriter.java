@@ -454,7 +454,7 @@ public class MPSWriter {
             for (int j = 0; j < graphVertices.length; j++) {
                 for (int c = 0; c < linearComponents.length; c++) {
                     for (int t = 0; t < timeConfiguration.length; t++) {
-                    p[i][j][c][t] = "p[" + i + "][" + j + "][" + c + "][" + t + "]";
+                        p[i][j][c][t] = "p[" + i + "][" + j + "][" + c + "][" + t + "]";
                     }
                 }
             }
@@ -480,23 +480,21 @@ public class MPSWriter {
                 for (int c = 0; c < linearComponents.length; c++) {
                     for (int t = 0; t < timeConfiguration.length; t++) {
                         String constraint = "A" + constraintCounter++;
-                        if (!contVariableToConstraints.containsKey(x[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c][t])) {
-                            contVariableToConstraints.put(x[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c][t], new HashSet<ConstraintTerm>());
+                        if (!contVariableToConstraints.containsKey(p[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c][t])) {
+                            contVariableToConstraints.put(p[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c][t], new HashSet<ConstraintTerm>());
                         }
-                        contVariableToConstraints.get(x[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c][t]).add(new ConstraintTerm(constraint, 1));
+                        contVariableToConstraints.get(p[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c][t]).add(new ConstraintTerm(constraint, 1));
 
-                        for (int tau = 0; tau <= t; tau++) {
-                            if (!intVariableToConstraints.containsKey(y[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c][tau])) {
-                                intVariableToConstraints.put(y[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c][tau], new HashSet<ConstraintTerm>());
-                            }
-                            intVariableToConstraints.get(y[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c][tau]).add(new ConstraintTerm(constraint, -linearComponents[c].getMaxCapacity()));
+                        if (!intVariableToConstraints.containsKey(y[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c][t])) {
+                            intVariableToConstraints.put(y[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c][t], new HashSet<ConstraintTerm>());
                         }
+                        intVariableToConstraints.get(y[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c][t]).add(new ConstraintTerm(constraint, -linearComponents[c].getMaxCapacity()));
 
                         constraintToSign.put(constraint, "L");
                         constraintRHS.put(constraint, 0.0);
 
                         constraint = "A" + constraintCounter++;
-                        contVariableToConstraints.get(x[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c][t]).add(new ConstraintTerm(constraint, 1));
+                        contVariableToConstraints.get(p[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c][t]).add(new ConstraintTerm(constraint, 1));
                         constraintToSign.put(constraint, "G");
                     }
                 }
@@ -514,14 +512,14 @@ public class MPSWriter {
                             contVariableToConstraints.put(x[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c][t], new HashSet<ConstraintTerm>());
                         }
                         contVariableToConstraints.get(x[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c][t]).add(new ConstraintTerm(constraint, 1));
-                        
+
                         for (int tau = 0; tau <= t; tau++) {
                             if (!contVariableToConstraints.containsKey(p[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c][tau])) {
                                 contVariableToConstraints.put(p[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c][tau], new HashSet<ConstraintTerm>());
                             }
                             contVariableToConstraints.get(p[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c][tau]).add(new ConstraintTerm(constraint, -1));
                         }
-                        
+
                         constraintToSign.put(constraint, "L");
                         constraintRHS.put(constraint, 0.0);
                     }
