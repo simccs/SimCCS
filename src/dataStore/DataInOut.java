@@ -103,12 +103,13 @@ public class DataInOut {
     }
 
     public static void loadCosts() {
-        String path = basePath + "/" + dataset + "/BaseData/CostNetwork/Construction Costs.txt";
         double[][] rightOfWayCosts = new double[0][0];
         double[][] constructionCosts = new double[0][0];
         double[][] routingCosts = new double[0][0];
 
-        // Load construction costs.
+        String path = basePath + "/" + dataset + "/BaseData/CostNetwork/Construction Costs.csv";
+
+        // Load construction costs from csv file.
         try (BufferedReader br = new BufferedReader(new FileReader(path))) {
             // Create construction costs array.
             constructionCosts = new double[data.getWidth() * data.getHeight() + 1][8];
@@ -125,17 +126,65 @@ public class DataInOut {
             String line = br.readLine();
             while (line != null) {
                 String costLine = br.readLine();
-                String[] costs = costLine.split("\\s+");
-                String[] cells = line.split("\\s+");
-                
-                int centerCell = Integer.parseInt(cells[0]);
-                for (int i = 1; i < costs.length; i++) {
-                    constructionCosts[centerCell][data.getNeighborNum(centerCell, Integer.parseInt(cells[i]))] = Double.parseDouble(costs[i]);
+
+                int currentCellIndex = 0;
+                int nextCellIndex = line.indexOf(",");
+                int centerCell = Integer.parseInt(line.substring(currentCellIndex, nextCellIndex));
+                currentCellIndex = nextCellIndex + 1;
+                int currentCostIndex = 0;
+                int nextCostIndex = 0;
+                boolean moreNeighbors = true;
+                while (moreNeighbors) {
+                    nextCellIndex = line.indexOf(",", currentCellIndex);
+                    if (nextCellIndex == -1) {
+                        moreNeighbors = false;
+                        nextCellIndex = line.length();
+                    }
+                    int neighborCell = Integer.parseInt(line.substring(currentCellIndex, nextCellIndex));
+                    currentCellIndex = nextCellIndex + 1;
+
+                    nextCostIndex = costLine.indexOf(",", currentCostIndex);
+                    if (nextCostIndex == -1) {
+                        nextCostIndex = costLine.length();
+                    }
+                    double cost = Double.parseDouble(costLine.substring(currentCostIndex, nextCostIndex));
+                    currentCostIndex = nextCostIndex + 1;
                 }
+
                 line = br.readLine();
             }
+
         } catch (IOException e) {
-            System.out.println(e.getMessage());
+            // Load construction costs from text file.
+            path = basePath + "/" + dataset + "/BaseData/CostNetwork/Construction Costs.txt";
+            try (BufferedReader br = new BufferedReader(new FileReader(path))) {
+                // Create construction costs array.
+                constructionCosts = new double[data.getWidth() * data.getHeight() + 1][8];
+                for (int i = 0; i < constructionCosts.length; i++) {
+                    for (int j = 0; j < constructionCosts[i].length; j++) {
+                        constructionCosts[i][j] = Double.MAX_VALUE;
+                    }
+                }
+
+                for (int i = 0; i < 8; i++) {
+                    br.readLine();
+                }
+
+                String line = br.readLine();
+                while (line != null) {
+                    String costLine = br.readLine();
+                    String[] costs = costLine.split("\\s+");
+                    String[] cells = line.split("\\s+");
+
+                    int centerCell = Integer.parseInt(cells[0]);
+                    for (int i = 1; i < costs.length; i++) {
+                        constructionCosts[centerCell][data.getNeighborNum(centerCell, Integer.parseInt(cells[i]))] = Double.parseDouble(costs[i]);
+                    }
+                    line = br.readLine();
+                }
+            } catch (IOException e2) {
+                System.out.println(e2.getMessage());
+            }
         }
 
         // Load right of way costs.  
