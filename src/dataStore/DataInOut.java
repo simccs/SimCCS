@@ -107,29 +107,27 @@ public class DataInOut {
         double[][] rightOfWayCosts = new double[0][0];
         double[][] constructionCosts = new double[0][0];
         double[][] routingCosts = new double[0][0];
+
+        // Load construction costs.
         try (BufferedReader br = new BufferedReader(new FileReader(path))) {
+            // Create construction costs array.
+            constructionCosts = new double[data.getWidth() * data.getHeight() + 1][8];
+            for (int i = 0; i < constructionCosts.length; i++) {
+                for (int j = 0; j < constructionCosts[i].length; j++) {
+                    constructionCosts[i][j] = Double.MAX_VALUE;
+                }
+            }
+
             for (int i = 0; i < 8; i++) {
                 br.readLine();
             }
 
-            // Create cost arrays.
-            rightOfWayCosts = new double[data.getWidth() * data.getHeight() + 1][8];
-            constructionCosts = new double[data.getWidth() * data.getHeight() + 1][8];
-            routingCosts = new double[data.getWidth() * data.getHeight() + 1][8];
-            for (int i = 0; i < constructionCosts.length; i++) {
-                for (int j = 0; j < constructionCosts[i].length; j++) {
-                    rightOfWayCosts[i][j] = Double.MAX_VALUE;
-                    constructionCosts[i][j] = Double.MAX_VALUE;
-                    routingCosts[i][j] = Double.MAX_VALUE;
-                }
-            }
-
-            // Load construction costs.
             String line = br.readLine();
             while (line != null) {
                 String costLine = br.readLine();
                 String[] costs = costLine.split("\\s+");
                 String[] cells = line.split("\\s+");
+                
                 int centerCell = Integer.parseInt(cells[0]);
                 for (int i = 1; i < costs.length; i++) {
                     constructionCosts[centerCell][data.getNeighborNum(centerCell, Integer.parseInt(cells[i]))] = Double.parseDouble(costs[i]);
@@ -143,6 +141,14 @@ public class DataInOut {
         // Load right of way costs.  
         path = basePath + "/" + dataset + "/BaseData/CostNetwork/RightOfWay Costs.txt";
         try (BufferedReader br = new BufferedReader(new FileReader(path))) {
+            // Create right of way cost array.
+            rightOfWayCosts = new double[data.getWidth() * data.getHeight() + 1][8];
+            for (int i = 0; i < rightOfWayCosts.length; i++) {
+                for (int j = 0; j < rightOfWayCosts[i].length; j++) {
+                    rightOfWayCosts[i][j] = Double.MAX_VALUE;
+                }
+            }
+
             for (int i = 0; i < 8; i++) {
                 br.readLine();
             }
@@ -161,10 +167,18 @@ public class DataInOut {
         } catch (IOException e) {
             rightOfWayCosts = null;
         }
-        
+
         // Load routing costs.
         path = basePath + "/" + dataset + "/BaseData/CostNetwork/Routing Costs.txt";
         try (BufferedReader br = new BufferedReader(new FileReader(path))) {
+            // Create routing costs array
+            routingCosts = new double[data.getWidth() * data.getHeight() + 1][8];
+            for (int i = 0; i < routingCosts.length; i++) {
+                for (int j = 0; j < routingCosts[i].length; j++) {
+                    routingCosts[i][j] = Double.MAX_VALUE;
+                }
+            }
+
             for (int i = 0; i < 8; i++) {
                 br.readLine();
             }
@@ -190,7 +204,7 @@ public class DataInOut {
                 }
             }
         }
-        
+
         data.setConstructionCosts(constructionCosts);
         data.setRightOfWayCosts(rightOfWayCosts);
         data.setRoutingCosts(routingCosts);
@@ -437,7 +451,7 @@ public class DataInOut {
             System.out.println("Not Yet Generated.");
         }
     }
-    
+
     public static void loadPriceConfiguration() {
         // Check if file exists
         String pricesPath = basePath + "/" + dataset + "/Scenarios/" + scenario + "/Configurations/priceInput.csv";
@@ -466,7 +480,7 @@ public class DataInOut {
             System.out.println("No price configuration file.");
         }
     }
-    
+
     public static void loadTimeConfiguration() {
         // Check if file exists
         String timeConfigurationPath = basePath + "/" + dataset + "/Scenarios/" + scenario + "/Configurations/timeInput.csv";
@@ -809,7 +823,7 @@ public class DataInOut {
 
         return soln;
     }
-    
+
     public static int determineNumTimeslots(String mpsFilePath) {
         File mpsFile = new File(mpsFilePath);
         HashSet<Integer> timeslots = new HashSet<>();
@@ -1164,7 +1178,7 @@ public class DataInOut {
         }
 
     }
-    
+
     public static void makeSolutionFile(String path, Solution soln) {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(new File(path, "solution.csv")))) {
             bw.write("Project Length," + soln.getProjectLength() + "\n");
@@ -1192,7 +1206,7 @@ public class DataInOut {
                 bw.write(sinkStorageAmounts.get(snk) + ",");
                 bw.write(sinkCosts.get(snk) + "\n");
             }
-            
+
             bw.write("\n");
 
             bw.write("Edge Source,Edge Sink,Amount (MTCO2/yr),Transport Cost ($M/yr)\n");
@@ -1207,7 +1221,7 @@ public class DataInOut {
             System.out.println(e.getMessage());
         }
     }
-    
+
     public static void makePriceAggregationFile(String path, String content) {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(path))) {
             bw.write(content);
