@@ -98,17 +98,32 @@ public class Heuristic {
     public void capacityModel(int numPairs) {
         long startTime = System.nanoTime();
         double amountCaptured = 0;  // Amount of CO2 currently captured/injected by algorithm
-
-        while (amountCaptured < data.getTargetCaptureAmount()) {
+        
+        //Total amount of CO2 storage possible from sources and sinks.
+        double tolerance = 0.00000001; //Will capture amountPossible-tolerance. 
+        double srcPossible=0;
+        for (int srcNum = 0; srcNum < sources.length; srcNum++) {
+        	srcPossible += sources[srcNum].getRemainingCapacity();
+        }
+        
+        double snkPossible=0;
+        for (int snkNum = 0; snkNum < sinks.length; snkNum++) {
+            snkPossible += sinks[snkNum].getRemainingCapacity();
+        }
+        
+        double amountPossible = Math.min(srcPossible,snkPossible)-tolerance;
+        
+        while (amountCaptured < data.getTargetCaptureAmount() && amountCaptured < amountPossible) {
+        	
             // Make cost array
-            Pair[][] pairCosts = makePairwiseCostArray(data.getTargetCaptureAmount() - amountCaptured);
+            Pair[][] pairCosts = makePairwiseCostArray(Math.min(data.getTargetCaptureAmount() - amountCaptured,
+            													amountPossible - amountCaptured));
 
             // TODO: Look at making this more efficient.Probably return pairCosts initially.
             ArrayList<Pair> pairCostsList = new ArrayList<Pair>();
             for (int srcNum = 0; srcNum < sources.length; srcNum++) {
                 for (int snkNum = 0; snkNum < sinks.length; snkNum++) {
                     pairCostsList.add(pairCosts[srcNum][snkNum]);
-
                 }
             }
 
@@ -119,11 +134,17 @@ public class Heuristic {
 
             double transferAmount = 0;
             for (int i = 0; i < cheapest.length; i++) {
-                transferAmount = Math.min(Math.min(cheapest[i].src.getRemainingCapacity(), cheapest[i].snk.getRemainingCapacity()), data.getTargetCaptureAmount() - amountCaptured);
+                transferAmount = Math.min(Math.min(Math.min(
+                		cheapest[i].src.getRemainingCapacity(), 
+                		cheapest[i].snk.getRemainingCapacity()),
+                		data.getTargetCaptureAmount() - amountCaptured),
+                		amountPossible - amountCaptured);
+                
                 amountCaptured += transferAmount;
+                
                 schedulePair(cheapest[i].src, cheapest[i].snk, cheapest[i].path, transferAmount);
 
-                if (amountCaptured >= data.getTargetCaptureAmount()) {
+                if (amountCaptured >= data.getTargetCaptureAmount() || amountCaptured >= amountPossible) {
                     break;
                 }
             }
