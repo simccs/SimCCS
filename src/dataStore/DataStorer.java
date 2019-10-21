@@ -88,21 +88,67 @@ public class DataStorer {
 
     public void generateCandidateGraph() {
         loadNetworkCosts();
-        generateDelaunayPairs();
+        String[] outliers = outliers();
+        if (outliers.length == 0) {
+            generateDelaunayPairs();
 
-        Object[] graphComponents = solver.generateDelaunayCandidateGraph();
-        if (graphComponents != null) {
-            graphVertices = (int[]) graphComponents[0];
-            graphEdgeCosts = (HashMap<Edge, Double>) graphComponents[1];
-            graphEdgeRoutes = (HashMap<Edge, int[]>) graphComponents[2];
+            Object[] graphComponents = solver.generateDelaunayCandidateGraph();
+            if (graphComponents != null) {
+                graphVertices = (int[]) graphComponents[0];
+                graphEdgeCosts = (HashMap<Edge, Double>) graphComponents[1];
+                graphEdgeRoutes = (HashMap<Edge, int[]>) graphComponents[2];
 
-            // Make right of way and construction costs
-            Object[] costComponents = solver.makeComponentCosts();
-            graphEdgeRightOfWayCosts = (HashMap<Edge, Double>) costComponents[0];
-            graphEdgeConstructionCosts = (HashMap<Edge, Double>) costComponents[1];
+                // Make right of way and construction costs
+                Object[] costComponents = solver.makeComponentCosts();
+                graphEdgeRightOfWayCosts = (HashMap<Edge, Double>) costComponents[0];
+                graphEdgeConstructionCosts = (HashMap<Edge, Double>) costComponents[1];
 
-            DataInOut.saveCandidateGraph();
+                DataInOut.saveCandidateGraph();
+            }
+        } else {
+            String text = "";
+            for (String outlier : outliers) {
+                text += outlier + ", ";
+            }
+           solver.getMessenger().setText("Outliers: " + text);
         }
+    }
+    
+    public String[] outliers() {
+        ArrayList<String> outliers = new ArrayList<>();
+        for (Source src : sources) {
+            int cell = src.getCellNum();
+            
+            if (cell >= constructionCosts.length) {
+                outliers.add("SRC-" + src.getLabel());
+            }
+            boolean connected = false;
+            for (double cost : constructionCosts[cell]) {
+                if (cost < Double.MAX_VALUE) {
+                    connected = true;
+                }
+            }
+            if (!connected) {
+                outliers.add("SRC-" + src.getLabel());
+            }
+        }
+        for (Sink snk : sinks) {
+            int cell = snk.getCellNum();
+            
+            if (cell >= constructionCosts.length) {
+                outliers.add("SNK-" + snk.getLabel());
+            }
+            boolean connected = false;
+            for (double cost : constructionCosts[cell]) {
+                if (cost < Double.MAX_VALUE) {
+                    connected = true;
+                }
+            }
+            if (!connected) {
+                outliers.add("SNK-" + snk.getLabel());
+            }
+        }
+        return outliers.toArray(new String[outliers.size()]);
     }
 
     public void loadNetworkCosts() {
