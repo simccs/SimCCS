@@ -238,12 +238,6 @@ public class ControlActions {
         }
     }
 
-    public void generateShortestPathsNetwork() {
-        if (scenario != "") {
-            data.generateShortestPaths();
-        }
-    }
-
     public void generateCandidateNetwork() {
         if (scenario != "") {
             data.generateCandidateGraph();
@@ -492,54 +486,6 @@ public class ControlActions {
             stage.setScene(scene);
             stage.show();
         }
-    }
-
-    public void toggleShortestPathsDisplay(boolean show) {
-        if (show && data != null) {
-            int[][] rawPaths = data.getShortestPathEdges();
-            HashSet<Edge> edges = new HashSet<>();
-            for (int p = 0; p < rawPaths.length; p++) {
-                int[] path = rawPaths[p];
-                for (int i = 0; i < path.length - 1; i++) {
-                    Edge edge = new Edge(path[i], path[i + 1]);
-                    edges.add(edge);
-                }
-            }
-            for (Edge edge : edges) {
-                double[] rawSrc = data.cellLocationToRawXY(edge.v1);
-                double[] rawDest = data.cellLocationToRawXY(edge.v2);
-                double sX = rawXtoDisplayX(rawSrc[0]);
-                double sY = rawYtoDisplayY(rawSrc[1]);
-                double dX = rawXtoDisplayX(rawDest[0]);
-                double dY = rawYtoDisplayY(rawDest[1]);
-                Line line = new Line(sX, sY, dX, dY);
-                line.setStroke(Color.BLACK);
-                line.setStrokeWidth(1.0 / gui.getScale());
-                line.setStrokeLineCap(StrokeLineCap.ROUND);
-                shortestPathsLayer.getChildren().add(line);
-            }
-        } else {
-            shortestPathsLayer.getChildren().clear();
-        }
-
-        // Alternate way that may be useful.
-        /*if (show && data != null) {
-            int[][] rawPaths = data.getShortestPathEdges();
-            for (int p = 0; p < rawPaths.length; p++) {
-                int[] path = rawPaths[p];
-                Path pathObj = new Path();
-                double[] rawSrc = data.cellLocationToRawXY(path[0]);
-                pathObj.getElements().add(new MoveTo(rawXtoDisplayX(rawSrc[0]), rawYtoDisplayY(rawSrc[1])));
-                for (int dest = 1; dest < path.length; dest++) {
-                    double[] rawDest = data.cellLocationToRawXY(path[dest]);
-                    LineTo line = new LineTo(rawXtoDisplayX(rawDest[0]), rawYtoDisplayY(rawDest[1]));
-                    pathObj.getElements().add(line);
-                }
-                shortestPathsLayer.getChildren().add(pathObj);
-            }
-        } else {
-            shortestPathsLayer.getChildren().clear();
-        }*/
     }
 
     public void toggleRawDelaunayDisplay(boolean show) {

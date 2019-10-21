@@ -101,126 +101,6 @@ public class Solver {
         return d.run(locations);
     }
 
-    public Object[] generateDelunayCanidateGraphSpeedUp() {
-
-        //data.generateDelaunayPairs();
-        HashSet<Edge> delaunayPairs = data.getDelaunayPairs();
-        HashMap<Edge, Double> graphEdgeCosts = new HashMap<>();
-        HashMap<Edge, int[]> graphEdgeRoutes = new HashMap<>();
-        HashMap<Integer, HashSet<Integer>> vertexNeighbors = new HashMap<>();    // Neighbors of a given vertex
-        HashSet<Integer> sourceSinksList = new HashSet<>(); // List of source and sink vertices
-        HashSet<Integer> degree2Vertices = new HashSet<>(); // Non-source/sink vertices with degree 2
-
-        // Populate initial costs, routes, and neighbors
-        for (Edge pair : delaunayPairs) {
-                   int pair2List[] = {pair.v2}; 
-                   int[] path = ((ArrayList<int[]>)(dijkstra(pair.v1, pair2List,.9999999)[0])).get(0);
-
-                    for (int i = 0; i < path.length - 1; i++) {
-                        Edge e = new Edge(path[i], path[i + 1]);
-                        graphEdgeCosts.put(e, data.getEdgeWeight(path[i], path[i + 1], "c"));
-                        graphEdgeRoutes.put(e, new int[]{path[i], path[i + 1]});
-
-                        // Add neighbor of i and i+1
-                        if (!vertexNeighbors.containsKey(path[i])) {
-                            vertexNeighbors.put(path[i], new HashSet<>());
-                        }
-                        vertexNeighbors.get(path[i]).add(path[i + 1]);
-                        if (!vertexNeighbors.containsKey(path[i + 1])) {
-                            vertexNeighbors.put(path[i + 1], new HashSet<>());
-                        }
-                        vertexNeighbors.get(path[i + 1]).add(path[i]);
-                    }
-        }
-
-            // Populate vertex lists
-            for (int cell : data.getSourceSinkCells()) {
-                sourceSinksList.add(cell);
-            }
-
-            // Make set of removable degree 2 vertices
-            for (int vertex : vertexNeighbors.keySet()) {
-                if (!sourceSinksList.contains(vertex) && vertexNeighbors.get(vertex).size() == 2) {
-                    degree2Vertices.add(vertex);
-                }
-            }
-
-            // Reduce degree 2 vertices
-            boolean degree2Removed = true;
-            while (degree2Removed) {
-                degree2Removed = false;
-                for (Iterator<Integer> iter = degree2Vertices.iterator(); iter.hasNext();) {
-                    int vertex = iter.next();
-                    int[] neighbors = convertIntegerArray(vertexNeighbors.get(vertex).toArray(new Integer[0]));
-                    // Only remove if it won't create multi-edges.
-                    Edge newEdge = new Edge(neighbors[0], neighbors[1]);
-                    if (!graphEdgeCosts.containsKey(newEdge)) {
-                        degree2Removed = true;
-
-                        // Get old edges
-                        Edge oldEdge1 = new Edge(neighbors[0], vertex);
-                        Edge oldEdge2 = new Edge(vertex, neighbors[1]);
-
-                        // Add new edge to edgeCosts
-                        double newCost = graphEdgeCosts.get(oldEdge1) + graphEdgeCosts.get(oldEdge2);
-                        graphEdgeCosts.put(newEdge, newCost);
-
-                        // Remove old edge from edgeCosts
-                        graphEdgeCosts.remove(oldEdge1);
-                        graphEdgeCosts.remove(oldEdge2);
-
-                        // Add route for new edge to edgeRoutes
-                        int[] oldRoute1 = graphEdgeRoutes.get(oldEdge1);
-                        int[] oldRoute2 = graphEdgeRoutes.get(oldEdge2);
-                        int[] newRoute = new int[oldRoute1.length + oldRoute2.length - 1];
-                        if (oldRoute1[oldRoute1.length - 1] == vertex) {
-                            for (int i = 0; i < oldRoute1.length; i++) {
-                                newRoute[i] = oldRoute1[i];
-                            }
-                        } else {
-                            for (int i = 0; i < oldRoute1.length; i++) {
-                                newRoute[oldRoute1.length - 1 - i] = oldRoute1[i];
-                            }
-                        }
-                        if (oldRoute2[0] == vertex) {
-                            for (int i = 1; i < oldRoute2.length; i++) {
-                                newRoute[i + oldRoute1.length - 1] = oldRoute2[i];
-                            }
-                        } else {
-                            for (int i = 0; i < oldRoute2.length - 1; i++) {
-                                newRoute[oldRoute1.length - 1 + oldRoute2.length - 1 - i] = oldRoute2[i];
-                            }
-                        }
-                        graphEdgeRoutes.put(newEdge, newRoute);
-
-                        // Remove route for old edge from edgeRoutes
-                        graphEdgeRoutes.remove(oldEdge1);
-                        graphEdgeRoutes.remove(oldEdge2);
-
-                        // Add neighbors for endpoint of new edge to vertexNeighbors
-                        vertexNeighbors.get(neighbors[0]).add(neighbors[1]);
-                        vertexNeighbors.get(neighbors[0]).remove(vertex);
-                        vertexNeighbors.get(neighbors[1]).add(neighbors[0]);
-                        vertexNeighbors.get(neighbors[1]).remove(vertex);
-
-                        // Remove old vertex from vertexNeighbors
-                        vertexNeighbors.remove(vertex);
-
-                        // Remove old vertex from degree2Vertices
-                        iter.remove();
-                    }
-                }
-            }
-            int[] vertices = new int[vertexNeighbors.keySet().size()];
-            int i = 0;
-            for (int vertex : vertexNeighbors.keySet()) {
-                vertices[i++] = vertex;
-            }
-            Arrays.sort(vertices);
-            return new Object[]{vertices, graphEdgeCosts, graphEdgeRoutes};
-
-    }
-    
     // Delaunay-based candidate graph.
     public Object[] generateDelaunayCandidateGraph() {
         //data.generateDelaunayPairs();
@@ -232,118 +112,113 @@ public class Solver {
         HashSet<Integer> degree2Vertices = new HashSet<>(); // Non-source/sink vertices with degree 2
 
         // Populate initial costs, routes, and neighbors
-        int[][] apShortestPaths = data.getShortestPathEdges();
-        if (apShortestPaths != null) {
-            for (Edge pair : delaunayPairs) {
-                for (int[] path : apShortestPaths) {
-                    if ((path[0] == pair.v1 && path[path.length - 1] == pair.v2) || (path[0] == pair.v2 && path[path.length - 1] == pair.v1)) {
-                        for (int i = 0; i < path.length - 1; i++) {
-                            Edge e = new Edge(path[i], path[i + 1]);
-                            graphEdgeCosts.put(e, data.getEdgeWeight(path[i], path[i + 1], "c"));
-                            graphEdgeRoutes.put(e, new int[]{path[i], path[i + 1]});
+        for (Edge pair : delaunayPairs) {
+            int pair2List[] = {pair.v2};
+            int[] path = ((ArrayList<int[]>) (dijkstra(pair.v1, pair2List, .9999999)[0])).get(0);
 
-                            // Add neighbor of i and i+1
-                            if (!vertexNeighbors.containsKey(path[i])) {
-                                vertexNeighbors.put(path[i], new HashSet<>());
-                            }
-                            vertexNeighbors.get(path[i]).add(path[i + 1]);
-                            if (!vertexNeighbors.containsKey(path[i + 1])) {
-                                vertexNeighbors.put(path[i + 1], new HashSet<>());
-                            }
-                            vertexNeighbors.get(path[i + 1]).add(path[i]);
-                        }
-                    }
+            for (int i = 0; i < path.length - 1; i++) {
+                Edge e = new Edge(path[i], path[i + 1]);
+                graphEdgeCosts.put(e, data.getEdgeWeight(path[i], path[i + 1], "c"));
+                graphEdgeRoutes.put(e, new int[]{path[i], path[i + 1]});
+
+                // Add neighbor of i and i+1
+                if (!vertexNeighbors.containsKey(path[i])) {
+                    vertexNeighbors.put(path[i], new HashSet<>());
                 }
-            }
-
-            // Populate vertex lists
-            for (int cell : data.getSourceSinkCells()) {
-                sourceSinksList.add(cell);
-            }
-
-            // Make set of removable degree 2 vertices
-            for (int vertex : vertexNeighbors.keySet()) {
-                if (!sourceSinksList.contains(vertex) && vertexNeighbors.get(vertex).size() == 2) {
-                    degree2Vertices.add(vertex);
+                vertexNeighbors.get(path[i]).add(path[i + 1]);
+                if (!vertexNeighbors.containsKey(path[i + 1])) {
+                    vertexNeighbors.put(path[i + 1], new HashSet<>());
                 }
+                vertexNeighbors.get(path[i + 1]).add(path[i]);
             }
-
-            // Reduce degree 2 vertices
-            boolean degree2Removed = true;
-            while (degree2Removed) {
-                degree2Removed = false;
-                for (Iterator<Integer> iter = degree2Vertices.iterator(); iter.hasNext();) {
-                    int vertex = iter.next();
-                    int[] neighbors = convertIntegerArray(vertexNeighbors.get(vertex).toArray(new Integer[0]));
-                    // Only remove if it won't create multi-edges.
-                    Edge newEdge = new Edge(neighbors[0], neighbors[1]);
-                    if (!graphEdgeCosts.containsKey(newEdge)) {
-                        degree2Removed = true;
-
-                        // Get old edges
-                        Edge oldEdge1 = new Edge(neighbors[0], vertex);
-                        Edge oldEdge2 = new Edge(vertex, neighbors[1]);
-
-                        // Add new edge to edgeCosts
-                        double newCost = graphEdgeCosts.get(oldEdge1) + graphEdgeCosts.get(oldEdge2);
-                        graphEdgeCosts.put(newEdge, newCost);
-
-                        // Remove old edge from edgeCosts
-                        graphEdgeCosts.remove(oldEdge1);
-                        graphEdgeCosts.remove(oldEdge2);
-
-                        // Add route for new edge to edgeRoutes
-                        int[] oldRoute1 = graphEdgeRoutes.get(oldEdge1);
-                        int[] oldRoute2 = graphEdgeRoutes.get(oldEdge2);
-                        int[] newRoute = new int[oldRoute1.length + oldRoute2.length - 1];
-                        if (oldRoute1[oldRoute1.length - 1] == vertex) {
-                            for (int i = 0; i < oldRoute1.length; i++) {
-                                newRoute[i] = oldRoute1[i];
-                            }
-                        } else {
-                            for (int i = 0; i < oldRoute1.length; i++) {
-                                newRoute[oldRoute1.length - 1 - i] = oldRoute1[i];
-                            }
-                        }
-                        if (oldRoute2[0] == vertex) {
-                            for (int i = 1; i < oldRoute2.length; i++) {
-                                newRoute[i + oldRoute1.length - 1] = oldRoute2[i];
-                            }
-                        } else {
-                            for (int i = 0; i < oldRoute2.length - 1; i++) {
-                                newRoute[oldRoute1.length - 1 + oldRoute2.length - 1 - i] = oldRoute2[i];
-                            }
-                        }
-                        graphEdgeRoutes.put(newEdge, newRoute);
-
-                        // Remove route for old edge from edgeRoutes
-                        graphEdgeRoutes.remove(oldEdge1);
-                        graphEdgeRoutes.remove(oldEdge2);
-
-                        // Add neighbors for endpoint of new edge to vertexNeighbors
-                        vertexNeighbors.get(neighbors[0]).add(neighbors[1]);
-                        vertexNeighbors.get(neighbors[0]).remove(vertex);
-                        vertexNeighbors.get(neighbors[1]).add(neighbors[0]);
-                        vertexNeighbors.get(neighbors[1]).remove(vertex);
-
-                        // Remove old vertex from vertexNeighbors
-                        vertexNeighbors.remove(vertex);
-
-                        // Remove old vertex from degree2Vertices
-                        iter.remove();
-                    }
-                }
-            }
-            int[] vertices = new int[vertexNeighbors.keySet().size()];
-            int i = 0;
-            for (int vertex : vertexNeighbors.keySet()) {
-                vertices[i++] = vertex;
-            }
-            Arrays.sort(vertices);
-            return new Object[]{vertices, graphEdgeCosts, graphEdgeRoutes};
-        } else {
-            return null;
         }
+
+        // Populate vertex lists
+        for (int cell : data.getSourceSinkCells()) {
+            sourceSinksList.add(cell);
+        }
+
+        // Make set of removable degree 2 vertices
+        for (int vertex : vertexNeighbors.keySet()) {
+            if (!sourceSinksList.contains(vertex) && vertexNeighbors.get(vertex).size() == 2) {
+                degree2Vertices.add(vertex);
+            }
+        }
+
+        // Reduce degree 2 vertices
+        boolean degree2Removed = true;
+        while (degree2Removed) {
+            degree2Removed = false;
+            for (Iterator<Integer> iter = degree2Vertices.iterator(); iter.hasNext();) {
+                int vertex = iter.next();
+                int[] neighbors = convertIntegerArray(vertexNeighbors.get(vertex).toArray(new Integer[0]));
+                // Only remove if it won't create multi-edges.
+                Edge newEdge = new Edge(neighbors[0], neighbors[1]);
+                if (!graphEdgeCosts.containsKey(newEdge)) {
+                    degree2Removed = true;
+
+                    // Get old edges
+                    Edge oldEdge1 = new Edge(neighbors[0], vertex);
+                    Edge oldEdge2 = new Edge(vertex, neighbors[1]);
+
+                    // Add new edge to edgeCosts
+                    double newCost = graphEdgeCosts.get(oldEdge1) + graphEdgeCosts.get(oldEdge2);
+                    graphEdgeCosts.put(newEdge, newCost);
+
+                    // Remove old edge from edgeCosts
+                    graphEdgeCosts.remove(oldEdge1);
+                    graphEdgeCosts.remove(oldEdge2);
+
+                    // Add route for new edge to edgeRoutes
+                    int[] oldRoute1 = graphEdgeRoutes.get(oldEdge1);
+                    int[] oldRoute2 = graphEdgeRoutes.get(oldEdge2);
+                    int[] newRoute = new int[oldRoute1.length + oldRoute2.length - 1];
+                    if (oldRoute1[oldRoute1.length - 1] == vertex) {
+                        for (int i = 0; i < oldRoute1.length; i++) {
+                            newRoute[i] = oldRoute1[i];
+                        }
+                    } else {
+                        for (int i = 0; i < oldRoute1.length; i++) {
+                            newRoute[oldRoute1.length - 1 - i] = oldRoute1[i];
+                        }
+                    }
+                    if (oldRoute2[0] == vertex) {
+                        for (int i = 1; i < oldRoute2.length; i++) {
+                            newRoute[i + oldRoute1.length - 1] = oldRoute2[i];
+                        }
+                    } else {
+                        for (int i = 0; i < oldRoute2.length - 1; i++) {
+                            newRoute[oldRoute1.length - 1 + oldRoute2.length - 1 - i] = oldRoute2[i];
+                        }
+                    }
+                    graphEdgeRoutes.put(newEdge, newRoute);
+
+                    // Remove route for old edge from edgeRoutes
+                    graphEdgeRoutes.remove(oldEdge1);
+                    graphEdgeRoutes.remove(oldEdge2);
+
+                    // Add neighbors for endpoint of new edge to vertexNeighbors
+                    vertexNeighbors.get(neighbors[0]).add(neighbors[1]);
+                    vertexNeighbors.get(neighbors[0]).remove(vertex);
+                    vertexNeighbors.get(neighbors[1]).add(neighbors[0]);
+                    vertexNeighbors.get(neighbors[1]).remove(vertex);
+
+                    // Remove old vertex from vertexNeighbors
+                    vertexNeighbors.remove(vertex);
+
+                    // Remove old vertex from degree2Vertices
+                    iter.remove();
+                }
+            }
+        }
+        int[] vertices = new int[vertexNeighbors.keySet().size()];
+        int i = 0;
+        for (int vertex : vertexNeighbors.keySet()) {
+            vertices[i++] = vertex;
+        }
+        Arrays.sort(vertices);
+        return new Object[]{vertices, graphEdgeCosts, graphEdgeRoutes};
+
     }
 
     public Object[] makeComponentCosts() {

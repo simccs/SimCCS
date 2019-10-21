@@ -61,8 +61,6 @@ public class DataInOut {
         loadSinks();
         System.out.println("Loading Transport Data...");
         loadTransport();
-        System.out.print("Loading Shortest Paths...");
-        loadShortestPaths();
         System.out.print("Loading Delaunay Pairs...");
         loadDelaunayPairs();
         System.out.print("Loading Candidate Graph...");
@@ -348,44 +346,6 @@ public class DataInOut {
         }
     }
 
-    private static void loadShortestPaths() {
-        String rawPathsPath = basePath + "/" + dataset + "/Scenarios/" + scenario + "/Network/RawPaths/RawPaths.txt";
-
-        if (new File(rawPathsPath).exists()) {
-            // Load from file.
-            try (BufferedReader br = new BufferedReader(new FileReader(rawPathsPath))) {
-                br.readLine();
-                String line = br.readLine();
-                ArrayList<int[]> rawPaths = new ArrayList<>();
-                ArrayList<Double> rawPathCosts = new ArrayList<>();
-                while (line != null) {
-                    // Read path cost
-                    String[] elements = line.split("\\s+");
-                    rawPathCosts.add(Double.parseDouble(elements[2]));
-
-                    // Read path
-                    line = br.readLine();
-                    elements = line.split("\\s+");
-                    int[] path = new int[Integer.parseInt(elements[0])];
-                    for (int nodeNum = 1; nodeNum < elements.length; nodeNum++) {
-                        path[nodeNum - 1] = Integer.parseInt(elements[nodeNum]);
-                    }
-                    rawPaths.add(path);
-
-                    // Prepare for next entry
-                    line = br.readLine();
-                }
-                data.setShortestPaths(rawPaths.toArray(new int[0][0]));
-                data.setShortestPathCosts(convertDoubleArray(rawPathCosts.toArray(new Double[0])));
-                System.out.println();
-            } catch (IOException e) {
-                System.out.println(e.getMessage());
-            }
-        } else {
-            System.out.println("Not Yet Generated.");
-        }
-    }
-
     private static void loadCandidateGraph() {
         // Check if file exists
         String candidateGraphPath = basePath + "/" + dataset + "/Scenarios/" + scenario + "/Network/CandidateNetwork/CandidateNetwork.txt";
@@ -560,29 +520,6 @@ public class DataInOut {
             }
         } else {
             System.out.println("No time configuration file.");
-        }
-    }
-
-    public static void saveShortestPathsNetwork() {
-        int[][] shortestPaths = data.getShortestPaths();
-        double[] shortestPathCosts = data.getShortestPathCosts();
-
-        String rawPathsPath = basePath + "/" + dataset + "/Scenarios/" + scenario + "/Network/RawPaths/RawPaths.txt";
-
-        // Save to file.
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(rawPathsPath))) {
-            bw.write("FromCell\tToCell\tCost\tLength\n");
-            for (int pathNum = 0; pathNum < shortestPaths.length; pathNum++) {
-                int[] pathArray = shortestPaths[pathNum];
-                bw.write(pathArray[0] + "\t" + pathArray[pathArray.length - 1] + "\t" + shortestPathCosts[pathNum] + "\t" + pathArray.length + "\n");
-                bw.write(pathArray.length + "");
-                for (int i = 0; i < pathArray.length; i++) {
-                    bw.write("\t" + pathArray[i]);
-                }
-                bw.write("\n");
-            }
-        } catch (IOException e) {
-            System.out.println(e.getMessage());
         }
     }
 

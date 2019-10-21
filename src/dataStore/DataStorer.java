@@ -33,8 +33,6 @@ public class DataStorer {
     private int[] sourceSinkCellLocations;  // Cell number for each source and sink node
 
     // Raw network information
-    private int[][] shortestPaths;   // [pathNum] = [nodeInPath1, nodeInPath2,...]
-    private double[] shortestPathCosts;  //[pathNum] = costForPathNum
     private double[][] rightOfWayCosts;
     private double[][] constructionCosts;
     private double[][] routingCosts;
@@ -64,13 +62,6 @@ public class DataStorer {
         this.scenario = scenario;
     }
 
-    public int[][] getShortestPathEdges() {
-        if (shortestPaths == null) {
-            generateShortestPaths();
-        }
-        return shortestPaths;
-    }
-
     // Get raw Delaunay edges.
     public HashSet<int[]> getDelaunayEdges() {
         if (delaunayPairs == null) {
@@ -88,17 +79,6 @@ public class DataStorer {
             generateCandidateGraph();
         }
         return new HashSet<>(graphEdgeRoutes.values());
-    }
-
-    public void generateShortestPaths() {
-        loadNetworkCosts();
-
-        Object[] pathDetails = solver.generateAllPairShortestPaths();
-        if (pathDetails != null) {
-            shortestPaths = (int[][]) pathDetails[0];
-            shortestPathCosts = (double[]) pathDetails[1];
-            DataInOut.saveShortestPathsNetwork();
-        }
     }
 
     public void generateDelaunayPairs() {
@@ -426,14 +406,6 @@ public class DataStorer {
         return linearComponents;
     }
 
-    public int[][] getShortestPaths() {
-        return shortestPaths;
-    }
-
-    public double[] getShortestPathCosts() {
-        return shortestPathCosts;
-    }
-
     public String getCostSurfacePath() {
         File temp = new File(basePath + "/" + dataset + "/BaseData/CostSurface/cost.bmp");
         return basePath + "/" + dataset + "/BaseData/CostSurface/cost.bmp";
@@ -536,14 +508,6 @@ public class DataStorer {
 
     public void setLinearComponents(LinearComponent[] linearComponents) {
         this.linearComponents = linearComponents;
-    }
-
-    public void setShortestPaths(int[][] shortestPaths) {
-        this.shortestPaths = shortestPaths;
-    }
-
-    public void setShortestPathCosts(double[] shortestPathCosts) {
-        this.shortestPathCosts = shortestPathCosts;
     }
 
     public void setGraphVertices(int[] vertices) {

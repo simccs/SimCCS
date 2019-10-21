@@ -36,7 +36,6 @@ public class Gui extends Application {
 
     private NetworkDisplay displayPane;
     private ChoiceBox scenarioChoice;
-    private RadioButton dispRawNetwork;
     private RadioButton dispDelaunayEdges;
     private RadioButton dispCandidateNetwork;
     private RadioButton sourceLabeled;
@@ -176,19 +175,9 @@ public class Gui extends Application {
         dataPane.getChildren().add(datasetContainer);
         
         //Build network buttons and add to control pane.
-        Button rawNetwork = new Button("Shortest Paths Network");
-        rawNetwork.setLayoutX(13);
-        rawNetwork.setLayoutY(4);
-        rawNetwork.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent e) {
-                controlActions.generateShortestPathsNetwork();
-            }
-        });
-
         Button candidateNetwork = new Button("Candidate Network");
         candidateNetwork.setLayoutX(27);
-        candidateNetwork.setLayoutY(35);
+        candidateNetwork.setLayoutY(4);
         candidateNetwork.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent e) {
@@ -199,10 +188,10 @@ public class Gui extends Application {
         AnchorPane buttonPane = new AnchorPane();
         buttonPane.setPrefSize(190, 30);
         buttonPane.setMinSize(0, 0);
-        buttonPane.getChildren().addAll(rawNetwork, candidateNetwork);
+        buttonPane.getChildren().addAll(candidateNetwork);
         TitledPane networkContainer = new TitledPane("Network Generation", buttonPane);
         networkContainer.setCollapsible(false);
-        networkContainer.setPrefSize(192, 95);
+        networkContainer.setPrefSize(192, 63);
         networkContainer.setLayoutX(14);
         networkContainer.setLayoutY(141);
         dataPane.getChildren().add(networkContainer);
@@ -212,24 +201,9 @@ public class Gui extends Application {
         selectionPane.setPrefSize(206, 237);
         selectionPane.setMinSize(0, 0);
 
-        dispRawNetwork = new RadioButton("Shortest Paths Network");
-        dispRawNetwork.setLayoutX(4);
-        dispRawNetwork.setLayoutY(83);
-        selectionPane.getChildren().add(dispRawNetwork);
-        Pane rawPathsLayer = new Pane();
-        sceneGestures.addEntityToResize(rawPathsLayer);
-        displayPane.getChildren().add(rawPathsLayer);
-        controlActions.addShortestPathsLayer(rawPathsLayer);
-        dispRawNetwork.selectedProperty().addListener(new ChangeListener<Boolean>() {
-            @Override
-            public void changed(ObservableValue<? extends Boolean> selected, Boolean oldVal, Boolean show) {
-                controlActions.toggleShortestPathsDisplay(show);
-            }
-        });
-
         dispDelaunayEdges = new RadioButton("Raw Delaunay Edges");
         dispDelaunayEdges.setLayoutX(4);
-        dispDelaunayEdges.setLayoutY(106);
+        dispDelaunayEdges.setLayoutY(83);
         selectionPane.getChildren().add(dispDelaunayEdges);
         Pane rawDelaunayLayer = new Pane();
         sceneGestures.addEntityToResize(rawDelaunayLayer);
@@ -244,7 +218,7 @@ public class Gui extends Application {
 
         dispCandidateNetwork = new RadioButton("Candidate Network");
         dispCandidateNetwork.setLayoutX(4);
-        dispCandidateNetwork.setLayoutY(129);
+        dispCandidateNetwork.setLayoutY(106);
         selectionPane.getChildren().add(dispCandidateNetwork);
         Pane candidateNetworkLayer = new Pane();
         sceneGestures.addEntityToResize(candidateNetworkLayer);
@@ -359,9 +333,9 @@ public class Gui extends Application {
 
         TitledPane selectionContainer = new TitledPane("Legend", selectionPane);
         selectionContainer.setCollapsible(false);
-        selectionContainer.setPrefSize(192, 180);
+        selectionContainer.setPrefSize(192, 156);
         selectionContainer.setLayoutX(14);
-        selectionContainer.setLayoutY(241);
+        selectionContainer.setLayoutY(210);
         dataPane.getChildren().add(selectionContainer);
 
         // Solution area
@@ -745,7 +719,6 @@ public class Gui extends Application {
 
     public void fullReset() {
         //scenarioChoice;
-        dispRawNetwork.setSelected(false);
         dispDelaunayEdges.setSelected(false);
         dispCandidateNetwork.setSelected(false);
         sourceLabeled.setSelected(false);
@@ -756,7 +729,6 @@ public class Gui extends Application {
     }
     
     public void softReset() {
-        dispRawNetwork.setSelected(false);
         dispDelaunayEdges.setSelected(false);
         dispCandidateNetwork.setSelected(false);
         sourceLabeled.setSelected(false);
