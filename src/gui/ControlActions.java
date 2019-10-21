@@ -238,12 +238,6 @@ public class ControlActions {
         }
     }
 
-    public void generateCandidateNetwork() {
-        if (scenario != "") {
-            data.generateCandidateGraph();
-        }
-    }
-
     public void generateCandidateGraph() {
         if (scenario != "") {
             data.generateCandidateGraph();
