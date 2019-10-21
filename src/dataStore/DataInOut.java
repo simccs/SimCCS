@@ -96,7 +96,35 @@ public class DataInOut {
             elements = line.split("\\s+");
             data.setCellSize(Double.valueOf(elements[1]));
         } catch (IOException e) {
-            System.out.println(e.getMessage());
+            path = basePath + "/" + dataset + "/BaseData/CostNetwork/Construction Costs.csv";
+            try (BufferedReader br = new BufferedReader(new FileReader(path))) {
+                br.readLine();
+                br.readLine();
+
+                // Read dimensions.
+                String line = br.readLine();
+                String[] elements = line.split(",");
+                data.setWidth(Integer.parseInt(elements[1]));
+
+                line = br.readLine();
+                elements = line.split(",");
+                data.setHeight(Integer.parseInt(elements[1]));
+
+                // Read conversions.
+                line = br.readLine();
+                elements = line.split(",");
+                data.setLowerLeftX(Double.parseDouble(elements[1]));
+
+                line = br.readLine();
+                elements = line.split(",");
+                data.setLowerLeftY(Double.parseDouble(elements[1]));
+
+                line = br.readLine();
+                elements = line.split(",");
+                data.setCellSize(Double.valueOf(elements[1]));
+            } catch (IOException e2) {
+                System.out.println(e.getMessage());
+            }
         }
     }
 
@@ -147,6 +175,8 @@ public class DataInOut {
                     }
                     double cost = Double.parseDouble(costLine.substring(currentCostIndex, nextCostIndex));
                     currentCostIndex = nextCostIndex + 1;
+
+                    constructionCosts[centerCell][data.getNeighborNum(centerCell, neighborCell)] = cost;
                 }
 
                 line = br.readLine();
