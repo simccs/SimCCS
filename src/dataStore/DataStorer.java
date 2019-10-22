@@ -110,15 +110,15 @@ public class DataStorer {
             for (String outlier : outliers) {
                 text += outlier + ", ";
             }
-           solver.getMessenger().setText("Outliers: " + text);
+            solver.getMessenger().setText("Outliers: " + text);
         }
     }
-    
+
     public String[] outliers() {
         ArrayList<String> outliers = new ArrayList<>();
         for (Source src : sources) {
             int cell = src.getCellNum();
-            
+
             if (cell >= constructionCosts.length) {
                 outliers.add("SRC-" + src.getLabel());
             }
@@ -134,7 +134,7 @@ public class DataStorer {
         }
         for (Sink snk : sinks) {
             int cell = snk.getCellNum();
-            
+
             if (cell >= constructionCosts.length) {
                 outliers.add("SNK-" + snk.getLabel());
             }

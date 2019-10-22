@@ -247,9 +247,8 @@ public class DataInOut {
 
         // Load routing costs.
         path = basePath + "/" + dataset + "/BaseData/CostNetwork/Routing Costs.txt";
-        try (BufferedReader br = new BufferedReader(new FileReader(path))) {
-            // Create routing costs array
-            routingCosts = new double[data.getWidth() * data.getHeight() + 1][8];
+        routingCosts = new double[data.getWidth() * data.getHeight() + 1][8];
+        try (BufferedReader br = new BufferedReader(new FileReader(path))) {            
             for (int i = 0; i < routingCosts.length; i++) {
                 for (int j = 0; j < routingCosts[i].length; j++) {
                     routingCosts[i][j] = Double.MAX_VALUE;
