@@ -33,9 +33,7 @@ public class Delaunay {
             points[ptNum] = new Point(coords[0], coords[1]);
         }
         
-        for (Point p : points) {
-            addPoint(p.x(), p.y());
-        }
+        generateTriangles();
         
         HashSet<Edge> delaunayPairs = new HashSet<>();
         
@@ -46,7 +44,7 @@ public class Delaunay {
         return delaunayPairs;
     }
     
-    public void addPoint(double x, double y) {
+    public void generateTriangles() {
         for (int i = 0; i < points.length; i++) {
             for (int j = i+1; j < points.length; j++) {
                 for (int k = j+1; k < points.length; k++) {
