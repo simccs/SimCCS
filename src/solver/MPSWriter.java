@@ -593,23 +593,37 @@ public class MPSWriter {
                 contVariableToConstraints.get(a[sourceCellToIndex.get(src)][t]).add(new ConstraintTerm(constraint, 1));
                 constraintToSign.put(constraint, "L");
 
-                constraintRHS.put(constraint, src.getProductionRate());
+                constraintRHS.put(constraint, src.getProductionRate(t));
             }
         }
 
         // Storage capped by max capacity
         constraintCounter = 1;
-        for (Sink snk : sinks) {
-            String constraint = "E" + constraintCounter++;
+        if (sinks[0].getNumCapacities() == 1) {
+            for (Sink snk : sinks) {
+                String constraint = "E" + constraintCounter++;
 
-            for (int t = 0; t < timeConfiguration.length; t++) {
-                if (!contVariableToConstraints.containsKey(b[sinkCellToIndex.get(snk)][t])) {
-                    contVariableToConstraints.put(b[sinkCellToIndex.get(snk)][t], new HashSet<ConstraintTerm>());
+                for (int t = 0; t < timeConfiguration.length; t++) {
+                    if (!contVariableToConstraints.containsKey(b[sinkCellToIndex.get(snk)][t])) {
+                        contVariableToConstraints.put(b[sinkCellToIndex.get(snk)][t], new HashSet<ConstraintTerm>());
+                    }
+                    contVariableToConstraints.get(b[sinkCellToIndex.get(snk)][t]).add(new ConstraintTerm(constraint, timeConfiguration[t][1]));
                 }
-                contVariableToConstraints.get(b[sinkCellToIndex.get(snk)][t]).add(new ConstraintTerm(constraint, timeConfiguration[t][1]));
+                constraintToSign.put(constraint, "L");
+                constraintRHS.put(constraint, snk.getCapacity());
             }
-            constraintToSign.put(constraint, "L");
-            constraintRHS.put(constraint, snk.getCapacity());
+        } else {
+            for (Sink snk : sinks) {
+                for (int t = 0; t < timeConfiguration.length; t++) {
+                    String constraint = "E" + constraintCounter++;
+                    if (!contVariableToConstraints.containsKey(b[sinkCellToIndex.get(snk)][t])) {
+                        contVariableToConstraints.put(b[sinkCellToIndex.get(snk)][t], new HashSet<ConstraintTerm>());
+                    }
+                    contVariableToConstraints.get(b[sinkCellToIndex.get(snk)][t]).add(new ConstraintTerm(constraint, timeConfiguration[t][1]));
+                    constraintToSign.put(constraint, "L");
+                    constraintRHS.put(constraint, snk.getCapacity(t));
+                }
+            }
         }
 
         // Set amount of CO2 to capture
@@ -628,10 +642,20 @@ public class MPSWriter {
         }
 
         // Hardcode constants.
+        int num = 0;
         contVariableToConstraints.put("crf", new HashSet<ConstraintTerm>());
-        contVariableToConstraints.get("crf").add(new ConstraintTerm("H2", 1));
-        constraintToSign.put("H2", "E");
-        constraintRHS.put("H2", crf);
+        contVariableToConstraints.get("crf").add(new ConstraintTerm("H" + num, 1));
+        constraintToSign.put("H" + num, "E");
+        constraintRHS.put("H" + num, crf);
+        num++;
+        
+        for (int t = 0; t < timeConfiguration.length; t++) {
+            contVariableToConstraints.put("N" + t, new HashSet<ConstraintTerm>());
+            contVariableToConstraints.get("N" + t).add(new ConstraintTerm("H" + num, 1));
+            constraintToSign.put("H" + num, "E");
+            constraintRHS.put("H" + num, timeConfiguration[t][1]);
+            num++;
+        }
 
         // Make objective
         String constraint = "OBJ";

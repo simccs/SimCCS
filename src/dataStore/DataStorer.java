@@ -467,7 +467,7 @@ public class DataStorer {
     public double getMaxAnnualCapturable() {
         double maxCap = 0;
         for (Source src : sources) {
-            maxCap += src.getProductionRate();
+            maxCap += src.getMaxProductionRate();
         }
         return maxCap;
     }
@@ -485,7 +485,7 @@ public class DataStorer {
     public double[][] getTimeConfiguration() {
         return timeConfiguration;
     }
-
+    
     public double[] getPriceConfiguration() {
         return priceConfiguration;
     }

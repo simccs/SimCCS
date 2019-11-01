@@ -25,4 +25,13 @@ public class Utilities {
         double div = Math.pow(10, numAfterDecimal);
         return Math.round(val * div) / div;
     }
+    
+    public static double[] csvToDoubleArray(String s) {
+        String[] components = s.split(",");
+        double[] returnArray = new double[components.length];
+        for (int i = 0; i < returnArray.length; i++) {
+            returnArray[i] = Double.parseDouble(components[i]);
+        }
+        return returnArray;
+    }
 }

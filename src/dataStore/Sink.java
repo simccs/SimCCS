@@ -12,7 +12,7 @@ public class Sink {
     private double wellOMCost;
     private double injectionCost;
     private double wellCapacity;
-    private double capacity;
+    private double[] capacities;
     private String label;
     
     private DataStorer data;
@@ -56,8 +56,8 @@ public class Sink {
         this.wellCapacity = wellCapacity;
     }
     
-    public void setCapacity(double capacity) {
-        this.capacity = capacity;
+    public void setCapacities(double[] capacities) {
+        this.capacities = capacities;
     }
     
     // Heuristic
@@ -105,6 +105,17 @@ public class Sink {
     }
     
     public double getCapacity() {
-        return capacity;
+        return capacities[0];
+    }
+    
+    public double getCapacity(int timeslot) {
+        if (timeslot >= capacities.length) {
+            return capacities[0];
+        }
+        return capacities[timeslot];
+    }
+    
+    public int getNumCapacities() {
+        return capacities.length;
     }
 }

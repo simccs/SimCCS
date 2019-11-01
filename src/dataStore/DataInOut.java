@@ -34,6 +34,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TreeMap;
 
+import static utilities.Utilities.*;
+
 import solver.Heuristic;
 
 /**
@@ -300,7 +302,7 @@ public class DataInOut {
                 source.setOpeningCost(Double.parseDouble(elements[1]));
                 source.setOMCost(Double.parseDouble(elements[2]));
                 source.setCaptureCost(Double.parseDouble(elements[3]));
-                source.setProductionRate(Double.parseDouble(elements[4]));
+                source.setProductionRates(csvToDoubleArray(elements[4]));
                 sources.add(source);
                 line = br.readLine();
             }
@@ -327,7 +329,7 @@ public class DataInOut {
                 sink.setWellOMCost(Double.parseDouble(elements[7]));
                 sink.setInjectionCost(Double.parseDouble(elements[8]));
                 sink.setWellCapacity(Double.parseDouble(elements[5]));
-                sink.setCapacity(Double.parseDouble(elements[2]));
+                sink.setCapacities(csvToDoubleArray(elements[2]));
                 sinks.add(sink);
                 line = br.readLine();
             }
@@ -358,7 +360,7 @@ public class DataInOut {
 
             // Set max pipeline capacities.
             for (int c = 0; c < linearComponents.size(); c++) {
-                double maxCap = data.getMaxAnnualCapturable();
+                double maxCap = data.getMaxAnnualCapturable();  // Do not make Double.MaxValue. CPLEX does not do well with infinity here.
                 if (c < linearComponents.size() - 1) {
                     double slope1 = linearComponents.get(c).getConSlope() + linearComponents.get(c).getRowSlope();
                     double intercept1 = linearComponents.get(c).getConIntercept() + linearComponents.get(c).getRowIntercept();
@@ -708,7 +710,7 @@ public class DataInOut {
         return soln;
     }
 
-    public static Solution loadSolution(String solutionPath, int timeslot) {
+    public static Solution loadSolution(String solutionPath, int timeslot) {   
         double threshold = .000001;
         Solution soln = new Solution();
 
@@ -786,6 +788,9 @@ public class DataInOut {
                         soln.setCRF(Double.parseDouble(variable[2]));
                     } else if (variable[0].equals("projectLength")) {
                         soln.setProjectLength(Integer.parseInt(variable[2]));
+                    } else if (variable[0].equals("N" + timeslot)) {
+                        int t = Integer.parseInt(variable[0].substring(1));
+                        soln.setProjectLength(Integer.parseInt(variable[2]));
                     }
                 }
                 line = br.readLine();
@@ -793,7 +798,7 @@ public class DataInOut {
         } catch (IOException e) {
             System.out.println(e.getMessage());
         }
-
+        
         try (BufferedReader br = new BufferedReader(new FileReader(mpsFile))) {
             String line = br.readLine();
             while (!line.equals("COLUMNS")) {
@@ -819,13 +824,13 @@ public class DataInOut {
                         }
                     } else {
                         if ((column[0].charAt(0) == 's' || column[0].charAt(0) == 'a') && (Integer.parseInt(components[2]) == timeslot)) {
-                            double cost = variableValues.get(column[0]) * Double.parseDouble(column[2]);
+                            double cost = variableValues.get(column[0]) * Double.parseDouble(column[2]) / soln.getProjectLength();
                             soln.addSourceCostComponent(sources[Integer.parseInt(components[1])], cost);
                         } else if ((column[0].charAt(0) == 'r' || column[0].charAt(0) == 'w' || column[0].charAt(0) == 'b') && (Integer.parseInt(components[2]) == timeslot)) {
-                            double cost = variableValues.get(column[0]) * Double.parseDouble(column[2]);
+                            double cost = variableValues.get(column[0]) * Double.parseDouble(column[2]) / soln.getProjectLength();
                             soln.addSinkCostComponent(sinks[Integer.parseInt(components[1])], cost);
                         } else if ((column[0].charAt(0) == 'p' || column[0].charAt(0) == 'y') && (Integer.parseInt(components[4]) == timeslot)) {
-                            double cost = variableValues.get(column[0]) * Double.parseDouble(column[2]);
+                            double cost = variableValues.get(column[0]) * Double.parseDouble(column[2]) / soln.getProjectLength();
                             soln.addEdgeCostComponent(new Edge(vertexIndexToCell.get(Integer.parseInt(components[1])), vertexIndexToCell.get(Integer.parseInt(components[2]))), cost);
                         }
                     }

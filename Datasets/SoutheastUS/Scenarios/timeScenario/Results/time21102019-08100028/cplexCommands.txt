@@ -1,5 +1,0 @@
-set logfile *
-read /Users/yaw/Box/CCS_update/SimCCS/SimCCS-OpenSource/Datasets/SoutheastUS/Scenarios/timeScenario/Results/time21102019-08100028/time.mps
-opt
-write /Users/yaw/Box/CCS_update/SimCCS/SimCCS-OpenSource/Datasets/SoutheastUS/Scenarios/timeScenario/Results/time21102019-08100028/solution.sol
-quit

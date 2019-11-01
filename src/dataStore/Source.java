@@ -9,7 +9,7 @@ public class Source {
     private double openingCost;
     private double omCost;
     private double captureCost;
-    private double productionRate;
+    private double[] productionRates;
     private String label;
     
     private DataStorer data;
@@ -40,8 +40,8 @@ public class Source {
         this.captureCost = captureCost;
     }
     
-    public void setProductionRate(double productionRate) {
-        this.productionRate = productionRate;
+    public void setProductionRates(double[] productionRates) {
+        this.productionRates = productionRates;
     }
     
     // Heuristic
@@ -71,6 +71,22 @@ public class Source {
     }
     
     public double getProductionRate() {
-        return productionRate;
+        return productionRates[0];
+    }
+    
+    public double getProductionRate(int timeslot) {
+        if (timeslot >= productionRates.length) {
+            return productionRates[0];
+        }
+        return productionRates[timeslot];
+    }
+    
+    public double getMaxProductionRate() {
+        double max = Double.NEGATIVE_INFINITY;
+        
+        for (double cur: productionRates) {
+            max = Math.max(max, cur);
+        }
+        return max;
     }
 }

@@ -530,41 +530,6 @@ public class ControlActions {
         }
     }
 
-    public void generateMPSFiles(String crf, String numYears, String capacityTarget, int modelVersion) {
-        Random r = new Random();
-
-        Source[] sources = data.getSources();
-        Sink[] sinks = data.getSinks();
-        double[] sinkCapacity = new double[sinks.length];
-        double[] wellCapacity = new double[sinks.length];
-        for (int j = 0; j < sinks.length; j++) {
-            sinkCapacity[j] = sinks[j].getCapacity();
-            wellCapacity[j] = sinks[j].getWellCapacity();
-        }
-        for (int i = 0; i < 100; i++) {
-            System.out.println("Writing MPS File " + i + "...");
-
-            for (int j = 0; j < sinks.length; j++) {
-                sinks[j].setCapacity((sinkCapacity[j] / 3.0) * r.nextGaussian() + sinkCapacity[j]);
-                sinks[j].setWellCapacity((wellCapacity[j] / 3.0) * r.nextGaussian() + wellCapacity[j]);
-            }
-            // source production rate.
-            // capture cost.
-            // well capacity.
-            // sink capacity.
-            // injection cost.
-            // STDDEV = 1/4 mean
-            data.setTargetCaptureAmount(Double.parseDouble(capacityTarget));    //Heuristic
-            data.setCrf(Double.parseDouble(crf));   //Heuristic
-            data.setProjectLength(Integer.parseInt(numYears));    // Heuristic
-            MPSWriter.writeCapPriceMPS("mip" + i + ".mps", data, Double.parseDouble(crf), Double.parseDouble(numYears), Double.parseDouble(capacityTarget), basePath, dataset, scenario, modelVersion);
-        }
-        for (int j = 0; j < sinks.length; j++) {
-            sinks[j].setCapacity(sinkCapacity[j]);
-            sinks[j].setWellCapacity(wellCapacity[j]);
-        }
-    }
-
     public void initializeSolutionSelection(ChoiceBox runChoice) {
         if (basePath != "" && dataset != "" && scenario != "") {
             // Set initial datasets.
