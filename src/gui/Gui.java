@@ -46,6 +46,7 @@ public class Gui extends Application {
     private ChoiceBox runChoice;
     private ChoiceBox solutionChoice;
     private AnchorPane solutionPane;
+    private TextArea messenger;
 
     @Override
     public void start(Stage stage) {
@@ -92,7 +93,7 @@ public class Gui extends Application {
         messengerPane.setPrefSize(220, 80);
         messengerPane.setLayoutX(0);
         messengerPane.setLayoutY(580);
-        TextArea messenger = new TextArea();
+        messenger = new TextArea();
         messenger.setEditable(false);
         messenger.setWrapText(true);
         messenger.setPrefSize(192, 70);
@@ -726,6 +727,7 @@ public class Gui extends Application {
         sinkLabeled.setSelected(false);
         sinkVisible.setSelected(false);
         dispCostSurface.setSelected(false);
+        messenger.setText("");
     }
     
     public void softReset() {
@@ -736,6 +738,7 @@ public class Gui extends Application {
         sinkLabeled.setSelected(false);
         sinkVisible.setSelected(false);
         dispCostSurface.setSelected(false);
+        messenger.setText("");
     }
 
     public double getScale() {
