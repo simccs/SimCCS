@@ -768,6 +768,7 @@ public class DataInOut {
         }
 
         HashMap<String, Double> variableValues = new HashMap<>();
+        HashMap<Integer, Integer> timeslotLengths = new HashMap<>();
 
         try (BufferedReader br = new BufferedReader(new FileReader(solFile))) {
             String line = br.readLine();
@@ -817,9 +818,13 @@ public class DataInOut {
                         soln.setCRF(Double.parseDouble(variable[2]));
                     } else if (variable[0].equals("projectLength")) {
                         soln.setProjectLength(Integer.parseInt(variable[2]));
-                    } else if (variable[0].equals("N" + timeslot)) {
+                    } else if (variable[0].startsWith("N")) {
                         int t = Integer.parseInt(variable[0].substring(1));
-                        soln.setProjectLength(Integer.parseInt(variable[2]));
+                        int length = Integer.parseInt(variable[2]);
+                        timeslotLengths.put(t, length);
+                        if (t == timeslot) {
+                            soln.setProjectLength(length);
+                        }
                     }
                 }
                 line = br.readLine();
@@ -858,21 +863,33 @@ public class DataInOut {
                         }
                     } else {
                         if ((column[0].charAt(0) == 's' || column[0].charAt(0) == 'a') && (Integer.parseInt(components[2]) == timeslot)) {
-                            double cost = variableValues.get(column[0]) * Double.parseDouble(column[2]) / soln.getProjectLength();
+                            double cost = variableValues.get(column[0]) * Double.parseDouble(column[2]) / timeslotLengths.get(timeslot);
                             soln.addSourceCostComponent(sources[Integer.parseInt(components[1])], cost);
                         } else if ((column[0].charAt(0) == 'r' || column[0].charAt(0) == 'w' || column[0].charAt(0) == 'b') && (Integer.parseInt(components[2]) == timeslot)) {
-                            double cost = variableValues.get(column[0]) * Double.parseDouble(column[2]) / soln.getProjectLength();
+                            double cost = variableValues.get(column[0]) * Double.parseDouble(column[2]) / timeslotLengths.get(timeslot);
                             soln.addSinkCostComponent(sinks[Integer.parseInt(components[1])], cost);
                         } else if (column[0].charAt(0) == 'p' || column[0].charAt(0) == 'y') {
                             if (components.length == 5) {
-                                if (Integer.parseInt(components[4]) == timeslot) {
-                                    double cost = variableValues.get(column[0]) * Double.parseDouble(column[2]) / soln.getProjectLength();
+                                // Need to account for pipelines still being paid off in current timeslot.
+                                int timeslotOpened = Integer.parseInt(components[4]);
+                                if (timeslotOpened <= timeslot) {
+                                    // Find time remaing.
+                                    int timeRemaining = 0;
+                                    for (int t = timeslotOpened; t < timeslotLengths.size(); t++) {
+                                        timeRemaining += timeslotLengths.get(t);
+                                    }
+                                    double cost = variableValues.get(column[0]) * Double.parseDouble(column[2]) / timeRemaining;
                                     soln.addEdgeCostComponent(new Edge(vertexIndexToCell.get(Integer.parseInt(components[1])), vertexIndexToCell.get(Integer.parseInt(components[2]))), cost);
                                 }
                             } else {
-                                if (Integer.parseInt(components[3]) == timeslot) {
+                                int timeslotOpened = Integer.parseInt(components[3]);
+                                if (timeslotOpened <= timeslot) {
+                                    int timeRemaining = 0;
+                                    for (int t = timeslotOpened; t < timeslotLengths.size(); t++) {
+                                        timeRemaining += timeslotLengths.get(t);
+                                    }
                                     UnidirEdge unidirEdge = edgeIndexToEdge.get(Integer.parseInt(components[1]));
-                                    double cost = variableValues.get(column[0]) * Double.parseDouble(column[2]) / soln.getProjectLength();
+                                    double cost = variableValues.get(column[0]) * Double.parseDouble(column[2]) / timeRemaining;
                                     soln.addEdgeCostComponent(new Edge(unidirEdge.v1, unidirEdge.v2), cost);
                                 }
                             }
