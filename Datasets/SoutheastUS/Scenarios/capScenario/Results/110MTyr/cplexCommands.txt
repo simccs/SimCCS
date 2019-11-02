@@ -1,5 +1,5 @@
 set logfile *
-read /Users/yaw/Box/CCS_update/SimCCS/SimCCS-OpenSource/Datasets/SoutheastUS/Scenarios/capScenario/Results/cap21102019-08060028/cap.mps
+read /Users/yaw/Box/CCS_update/SimCCS/SimCCS-OpenSource/Datasets/SoutheastUS/Scenarios/capScenario/Results/cap02112019-08170046/cap.mps
 opt
-write /Users/yaw/Box/CCS_update/SimCCS/SimCCS-OpenSource/Datasets/SoutheastUS/Scenarios/capScenario/Results/cap21102019-08060028/solution.sol
+write /Users/yaw/Box/CCS_update/SimCCS/SimCCS-OpenSource/Datasets/SoutheastUS/Scenarios/capScenario/Results/cap02112019-08170046/solution.sol
 quit

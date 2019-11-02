@@ -250,7 +250,7 @@ public class DataInOut {
         // Load routing costs.
         path = basePath + "/" + dataset + "/BaseData/CostNetwork/Routing Costs.txt";
         routingCosts = new double[data.getWidth() * data.getHeight() + 1][8];
-        try (BufferedReader br = new BufferedReader(new FileReader(path))) {            
+        try (BufferedReader br = new BufferedReader(new FileReader(path))) {
             for (int i = 0; i < routingCosts.length; i++) {
                 for (int j = 0; j < routingCosts[i].length; j++) {
                     routingCosts[i][j] = Double.MAX_VALUE;
@@ -710,7 +710,7 @@ public class DataInOut {
         return soln;
     }
 
-    public static Solution loadSolution(String solutionPath, int timeslot) {   
+    public static Solution loadSolution(String solutionPath, int timeslot) {
         double threshold = .000001;
         Solution soln = new Solution();
 
@@ -729,6 +729,7 @@ public class DataInOut {
         Source[] sources = data.getSources();
         Sink[] sinks = data.getSinks();
         int[] graphVertices = data.getGraphVertices();
+        HashMap<Edge, Double> edgeConstructionCosts = data.getGraphEdgeConstructionCosts();
 
         // Make cell/index maps.
         HashMap<Source, Integer> sourceCellToIndex = new HashMap<>();
@@ -737,6 +738,8 @@ public class DataInOut {
         HashMap<Integer, Sink> sinkIndexToCell = new HashMap<>();
         HashMap<Integer, Integer> vertexCellToIndex = new HashMap<>();
         HashMap<Integer, Integer> vertexIndexToCell = new HashMap<>();
+        HashMap<UnidirEdge, Integer> edgeToIndex = new HashMap<>();
+        HashMap<Integer, UnidirEdge> edgeIndexToEdge = new HashMap<>();
 
         // Initialize cell/index maps.
         for (int i = 0; i < sources.length; i++) {
@@ -750,6 +753,18 @@ public class DataInOut {
         for (int i = 0; i < graphVertices.length; i++) {
             vertexCellToIndex.put(graphVertices[i], i);
             vertexIndexToCell.put(i, graphVertices[i]);
+        }
+        int index = 0;
+        for (Edge e : edgeConstructionCosts.keySet()) {
+            UnidirEdge e1 = new UnidirEdge(e.v1, e.v2);
+            edgeToIndex.put(e1, index);
+            edgeIndexToEdge.put(index, e1);
+            index++;
+
+            UnidirEdge e2 = new UnidirEdge(e.v2, e.v1);
+            edgeToIndex.put(e2, index);
+            edgeIndexToEdge.put(index, e2);
+            index++;
         }
 
         HashMap<String, Double> variableValues = new HashMap<>();
@@ -772,15 +787,29 @@ public class DataInOut {
                         } else if (components[0].equals("b")) {
                             soln.addSinkStorageAmount(sinks[Integer.parseInt(components[1])], Double.parseDouble(variable[2]));
                         } else if (components[0].equals("p")) {
-                            soln.addEdgeTransportAmount(new Edge(vertexIndexToCell.get(Integer.parseInt(components[1])), vertexIndexToCell.get(Integer.parseInt(components[2]))), Double.parseDouble(variable[2]));
+                            if (components.length == 4) {
+                                soln.addEdgeTransportAmount(new Edge(vertexIndexToCell.get(Integer.parseInt(components[1])), vertexIndexToCell.get(Integer.parseInt(components[2]))), Double.parseDouble(variable[2]));
+                            } else {
+                                UnidirEdge unidirEdge = edgeIndexToEdge.get(Integer.parseInt(components[1]));
+                                soln.addEdgeTransportAmount(new Edge(unidirEdge.v1, unidirEdge.v2), Double.parseDouble(variable[2]));
+                            }
                         }
                     } else {
                         if (components[0].equals("a") && (Integer.parseInt(components[2]) == timeslot)) {
                             soln.addSourceCaptureAmount(sources[Integer.parseInt(components[1])], Double.parseDouble(variable[2]));
                         } else if (components[0].equals("b") && (Integer.parseInt(components[2]) == timeslot)) {
                             soln.addSinkStorageAmount(sinks[Integer.parseInt(components[1])], Double.parseDouble(variable[2]));
-                        } else if (components[0].equals("x") && (Integer.parseInt(components[4]) == timeslot)) {
-                            soln.addEdgeTransportAmount(new Edge(vertexIndexToCell.get(Integer.parseInt(components[1])), vertexIndexToCell.get(Integer.parseInt(components[2]))), Double.parseDouble(variable[2]));
+                        } else if (components[0].equals("x")) {
+                            if (components.length == 5) {
+                                if (Integer.parseInt(components[4]) == timeslot) {
+                                    soln.addEdgeTransportAmount(new Edge(vertexIndexToCell.get(Integer.parseInt(components[1])), vertexIndexToCell.get(Integer.parseInt(components[2]))), Double.parseDouble(variable[2]));
+                                }
+                            } else {
+                                if (Integer.parseInt(components[3]) == timeslot) {
+                                    UnidirEdge unidirEdge = edgeIndexToEdge.get(Integer.parseInt(components[1]));
+                                    soln.addEdgeTransportAmount(new Edge(unidirEdge.v1, unidirEdge.v2), Double.parseDouble(variable[2]));
+                                }
+                            }
                         }
                     }
 
@@ -798,7 +827,7 @@ public class DataInOut {
         } catch (IOException e) {
             System.out.println(e.getMessage());
         }
-        
+
         try (BufferedReader br = new BufferedReader(new FileReader(mpsFile))) {
             String line = br.readLine();
             while (!line.equals("COLUMNS")) {
@@ -820,7 +849,12 @@ public class DataInOut {
                             soln.addSinkCostComponent(sinks[Integer.parseInt(components[1])], cost);
                         } else if (column[0].charAt(0) == 'p' || column[0].charAt(0) == 'y') {
                             double cost = variableValues.get(column[0]) * Double.parseDouble(column[2]);
-                            soln.addEdgeCostComponent(new Edge(vertexIndexToCell.get(Integer.parseInt(components[1])), vertexIndexToCell.get(Integer.parseInt(components[2]))), cost);
+                            if (components.length == 4) {
+                                soln.addEdgeCostComponent(new Edge(vertexIndexToCell.get(Integer.parseInt(components[1])), vertexIndexToCell.get(Integer.parseInt(components[2]))), cost);
+                            } else {
+                                UnidirEdge unidirEdge = edgeIndexToEdge.get(Integer.parseInt(components[1]));
+                                soln.addEdgeCostComponent(new Edge(unidirEdge.v1, unidirEdge.v2), cost);
+                            }
                         }
                     } else {
                         if ((column[0].charAt(0) == 's' || column[0].charAt(0) == 'a') && (Integer.parseInt(components[2]) == timeslot)) {
@@ -829,9 +863,19 @@ public class DataInOut {
                         } else if ((column[0].charAt(0) == 'r' || column[0].charAt(0) == 'w' || column[0].charAt(0) == 'b') && (Integer.parseInt(components[2]) == timeslot)) {
                             double cost = variableValues.get(column[0]) * Double.parseDouble(column[2]) / soln.getProjectLength();
                             soln.addSinkCostComponent(sinks[Integer.parseInt(components[1])], cost);
-                        } else if ((column[0].charAt(0) == 'p' || column[0].charAt(0) == 'y') && (Integer.parseInt(components[4]) == timeslot)) {
-                            double cost = variableValues.get(column[0]) * Double.parseDouble(column[2]) / soln.getProjectLength();
-                            soln.addEdgeCostComponent(new Edge(vertexIndexToCell.get(Integer.parseInt(components[1])), vertexIndexToCell.get(Integer.parseInt(components[2]))), cost);
+                        } else if (column[0].charAt(0) == 'p' || column[0].charAt(0) == 'y') {
+                            if (components.length == 5) {
+                                if (Integer.parseInt(components[4]) == timeslot) {
+                                    double cost = variableValues.get(column[0]) * Double.parseDouble(column[2]) / soln.getProjectLength();
+                                    soln.addEdgeCostComponent(new Edge(vertexIndexToCell.get(Integer.parseInt(components[1])), vertexIndexToCell.get(Integer.parseInt(components[2]))), cost);
+                                }
+                            } else {
+                                if (Integer.parseInt(components[3]) == timeslot) {
+                                    UnidirEdge unidirEdge = edgeIndexToEdge.get(Integer.parseInt(components[1]));
+                                    double cost = variableValues.get(column[0]) * Double.parseDouble(column[2]) / soln.getProjectLength();
+                                    soln.addEdgeCostComponent(new Edge(unidirEdge.v1, unidirEdge.v2), cost);
+                                }
+                            }
                         }
                     }
                 }

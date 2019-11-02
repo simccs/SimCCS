@@ -5,6 +5,7 @@ import dataStore.Edge;
 import dataStore.LinearComponent;
 import dataStore.Sink;
 import dataStore.Source;
+import dataStore.UnidirEdge;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -36,6 +37,8 @@ public class MPSWriter {
         HashMap<Integer, Sink> sinkIndexToCell = new HashMap<>();
         HashMap<Integer, Integer> vertexCellToIndex = new HashMap<>();
         HashMap<Integer, Integer> vertexIndexToCell = new HashMap<>();
+        HashMap<UnidirEdge, Integer> edgeToIndex = new HashMap<>();
+        HashMap<Integer, UnidirEdge> edgeIndexToEdge = new HashMap<>();
         HashSet<Integer> sourceCells = new HashSet<>();
         HashSet<Integer> sinkCells = new HashSet<>();
 
@@ -65,6 +68,18 @@ public class MPSWriter {
         for (int i = 0; i < graphVertices.length; i++) {
             vertexCellToIndex.put(graphVertices[i], i);
             vertexIndexToCell.put(i, graphVertices[i]);
+        }
+        int index = 0;
+        for (Edge e : edgeConstructionCosts.keySet()) {
+            UnidirEdge e1 = new UnidirEdge(e.v1, e.v2);
+            edgeToIndex.put(e1, index);
+            edgeIndexToEdge.put(index, e1);
+            index++;
+
+            UnidirEdge e2 = new UnidirEdge(e.v2, e.v1);
+            edgeToIndex.put(e2, index);
+            edgeIndexToEdge.put(index, e2);
+            index++;
         }
 
         // Build model
@@ -103,72 +118,64 @@ public class MPSWriter {
         }
 
         // Pipeline between i and j with trend c
-        String[][][] y = new String[graphVertices.length][graphVertices.length][linearComponents.length];
-        for (int i = 0; i < graphVertices.length; i++) {
-            for (int j = 0; j < graphVertices.length; j++) {
-                for (int c = 0; c < linearComponents.length; c++) {
-                    for (int dest : neighbors.get(vertexIndexToCell.get(i))) {
-                        if (dest == vertexIndexToCell.get(j)) {
-                            y[i][j][c] = "y[" + i + "][" + j + "][" + c + "]";
-                            variableBounds.put(y[i][j][c], new VariableBound("UP", 1));
-                        }
-                    }
-                }
+        String[][] y = new String[edgeToIndex.size()][linearComponents.length];
+        for (int e = 0; e < edgeToIndex.size(); e++) {
+            for (int c = 0; c < linearComponents.length; c++) {
+                y[e][c] = "y[" + e + "][" + c + "]";
+                variableBounds.put(y[e][c], new VariableBound("UP", 1));
             }
         }
 
         // Pipeline capcaity
-        String[][][] p = new String[graphVertices.length][graphVertices.length][linearComponents.length];
-        for (int i = 0; i < graphVertices.length; i++) {
-            for (int j = 0; j < graphVertices.length; j++) {
-                for (int c = 0; c < linearComponents.length; c++) {
-                    p[i][j][c] = "p[" + i + "][" + j + "][" + c + "]";
-                }
+        String[][] p = new String[edgeToIndex.size()][linearComponents.length];
+        for (int e = 0; e < edgeToIndex.size(); e++) {
+            for (int c = 0; c < linearComponents.length; c++) {
+                p[e][c] = "p[" + e + "][" + c + "]";
             }
+            //}
         }
 
         // Make constraints
         // Pipeline capacity constraints
         int constraintCounter = 1;
-        for (int src : graphVertices) {
-            for (int dest : neighbors.get(src)) {
-                for (int c = 0; c < linearComponents.length; c++) {
-                    String constraint = "A" + constraintCounter++;
-                    if (!contVariableToConstraints.containsKey(p[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c])) {
-                        contVariableToConstraints.put(p[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c], new HashSet<ConstraintTerm>());
-                    }
-                    contVariableToConstraints.get(p[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c]).add(new ConstraintTerm(constraint, 1));
-
-                    if (!intVariableToConstraints.containsKey(y[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c])) {
-                        intVariableToConstraints.put(y[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c], new HashSet<ConstraintTerm>());
-                    }
-                    intVariableToConstraints.get(y[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c]).add(new ConstraintTerm(constraint, -linearComponents[c].getMaxCapacity()));
-
-                    constraintToSign.put(constraint, "L");
-                    constraintRHS.put(constraint, 0.0);
-
-                    constraint = "A" + constraintCounter++;
-                    contVariableToConstraints.get(p[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c]).add(new ConstraintTerm(constraint, 1));
-                    constraintToSign.put(constraint, "G");
+        for (int e = 0; e < edgeToIndex.size(); e++) {
+            for (int c = 0; c < linearComponents.length; c++) {
+                String constraint = "A" + constraintCounter++;
+                if (!contVariableToConstraints.containsKey(p[e][c])) {
+                    contVariableToConstraints.put(p[e][c], new HashSet<ConstraintTerm>());
                 }
+                contVariableToConstraints.get(p[e][c]).add(new ConstraintTerm(constraint, 1));
+
+                if (!intVariableToConstraints.containsKey(y[e][c])) {
+                    intVariableToConstraints.put(y[e][c], new HashSet<ConstraintTerm>());
+                }
+                intVariableToConstraints.get(y[e][c]).add(new ConstraintTerm(constraint, -linearComponents[c].getMaxCapacity()));
+
+                constraintToSign.put(constraint, "L");
+                constraintRHS.put(constraint, 0.0);
+
+                constraint = "A" + constraintCounter++;
+                contVariableToConstraints.get(p[e][c]).add(new ConstraintTerm(constraint, 1));
+                constraintToSign.put(constraint, "G");
             }
         }
 
         // No pipeline loops
         constraintCounter = 1;
-        for (int src : graphVertices) {
-            for (int dest : neighbors.get(src)) {
-                String constraint = "B" + constraintCounter++;
-                for (int c = 0; c < linearComponents.length; c++) {
-                    if (!intVariableToConstraints.containsKey(y[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c])) {
-                        intVariableToConstraints.put(y[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c], new HashSet<ConstraintTerm>());
-                    }
-                    intVariableToConstraints.get(y[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c]).add(new ConstraintTerm(constraint, 1));
-
+        for (int e = 0; e < edgeToIndex.size(); e++) {
+            //for (int src : graphVertices) {
+            //for (int dest : neighbors.get(src)) {
+            String constraint = "B" + constraintCounter++;
+            for (int c = 0; c < linearComponents.length; c++) {
+                if (!intVariableToConstraints.containsKey(y[e][c])) {
+                    intVariableToConstraints.put(y[e][c], new HashSet<ConstraintTerm>());
                 }
-                constraintToSign.put(constraint, "L");
-                constraintRHS.put(constraint, 1.0);
+                intVariableToConstraints.get(y[e][c]).add(new ConstraintTerm(constraint, 1));
+
             }
+            constraintToSign.put(constraint, "L");
+            constraintRHS.put(constraint, 1.0);
+            //}
         }
 
         // Conservation of flow
@@ -176,20 +183,22 @@ public class MPSWriter {
         for (int src : graphVertices) {
             String constraint = "C" + constraintCounter++;
             for (int dest : neighbors.get(src)) {
+                UnidirEdge edge = new UnidirEdge(src, dest);
                 for (int c = 0; c < linearComponents.length; c++) {
-                    if (!contVariableToConstraints.containsKey(p[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c])) {
-                        contVariableToConstraints.put(p[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c], new HashSet<ConstraintTerm>());
+                    if (!contVariableToConstraints.containsKey(p[edgeToIndex.get(edge)][c])) {
+                        contVariableToConstraints.put(p[edgeToIndex.get(edge)][c], new HashSet<ConstraintTerm>());
                     }
-                    contVariableToConstraints.get(p[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c]).add(new ConstraintTerm(constraint, 1));
+                    contVariableToConstraints.get(p[edgeToIndex.get(edge)][c]).add(new ConstraintTerm(constraint, 1));
                 }
             }
 
             for (int dest : neighbors.get(src)) {
+                UnidirEdge edge = new UnidirEdge(dest, src);
                 for (int c = 0; c < linearComponents.length; c++) {
-                    if (!contVariableToConstraints.containsKey(p[vertexCellToIndex.get(dest)][vertexCellToIndex.get(src)][c])) {
-                        contVariableToConstraints.put(p[vertexCellToIndex.get(dest)][vertexCellToIndex.get(src)][c], new HashSet<ConstraintTerm>());
+                    if (!contVariableToConstraints.containsKey(p[edgeToIndex.get(edge)][c])) {
+                        contVariableToConstraints.put(p[edgeToIndex.get(edge)][c], new HashSet<ConstraintTerm>());
                     }
-                    contVariableToConstraints.get(p[vertexCellToIndex.get(dest)][vertexCellToIndex.get(src)][c]).add(new ConstraintTerm(constraint, -1));
+                    contVariableToConstraints.get(p[edgeToIndex.get(edge)][c]).add(new ConstraintTerm(constraint, -1));
                 }
             }
 
@@ -325,21 +334,22 @@ public class MPSWriter {
             contVariableToConstraints.get(a[sourceCellToIndex.get(src)]).add(new ConstraintTerm(constraint, src.getCaptureCost()));
         }
 
-        for (int vertex : graphVertices) {
-            for (int neighbor : neighbors.get(vertex)) {
-                for (int c = 0; c < linearComponents.length; c++) {
-                    if (!intVariableToConstraints.containsKey(y[vertexCellToIndex.get(vertex)][vertexCellToIndex.get(neighbor)][c])) {
-                        intVariableToConstraints.put(y[vertexCellToIndex.get(vertex)][vertexCellToIndex.get(neighbor)][c], new HashSet<ConstraintTerm>());
-                    }
-                    double coefficient = (linearComponents[c].getConIntercept() * edgeConstructionCosts.get(new Edge(vertex, neighbor)) + linearComponents[c].getRowIntercept() * edgeRightOfWayCosts.get(new Edge(vertex, neighbor))) * crf;
-                    intVariableToConstraints.get(y[vertexCellToIndex.get(vertex)][vertexCellToIndex.get(neighbor)][c]).add(new ConstraintTerm(constraint, coefficient));
+        for (int e = 0; e < edgeToIndex.size(); e++) {
+            for (int c = 0; c < linearComponents.length; c++) {
+                UnidirEdge unidirEdge = edgeIndexToEdge.get(e);
+                Edge bidirEdge = new Edge(unidirEdge.v1, unidirEdge.v2);
 
-                    if (!contVariableToConstraints.containsKey(p[vertexCellToIndex.get(vertex)][vertexCellToIndex.get(neighbor)][c])) {
-                        contVariableToConstraints.put(p[vertexCellToIndex.get(vertex)][vertexCellToIndex.get(neighbor)][c], new HashSet<ConstraintTerm>());
-                    }
-                    coefficient = (linearComponents[c].getConSlope() * edgeConstructionCosts.get(new Edge(vertex, neighbor)) + linearComponents[c].getRowSlope() * edgeRightOfWayCosts.get(new Edge(vertex, neighbor))) * crf / pipeUtilization;
-                    contVariableToConstraints.get(p[vertexCellToIndex.get(vertex)][vertexCellToIndex.get(neighbor)][c]).add(new ConstraintTerm(constraint, coefficient));
+                if (!intVariableToConstraints.containsKey(y[e][c])) {
+                    intVariableToConstraints.put(y[e][c], new HashSet<ConstraintTerm>());
                 }
+                double coefficient = (linearComponents[c].getConIntercept() * edgeConstructionCosts.get(bidirEdge) + linearComponents[c].getRowIntercept() * edgeRightOfWayCosts.get(bidirEdge)) * crf;
+                intVariableToConstraints.get(y[e][c]).add(new ConstraintTerm(constraint, coefficient));
+
+                if (!contVariableToConstraints.containsKey(p[e][c])) {
+                    contVariableToConstraints.put(p[e][c], new HashSet<ConstraintTerm>());
+                }
+                coefficient = (linearComponents[c].getConSlope() * edgeConstructionCosts.get(bidirEdge) + linearComponents[c].getRowSlope() * edgeRightOfWayCosts.get(bidirEdge)) * crf / pipeUtilization;
+                contVariableToConstraints.get(p[e][c]).add(new ConstraintTerm(constraint, coefficient));
             }
         }
 
@@ -382,6 +392,8 @@ public class MPSWriter {
         HashMap<Integer, Sink> sinkIndexToCell = new HashMap<>();
         HashMap<Integer, Integer> vertexCellToIndex = new HashMap<>();
         HashMap<Integer, Integer> vertexIndexToCell = new HashMap<>();
+        HashMap<UnidirEdge, Integer> edgeToIndex = new HashMap<>();
+        HashMap<Integer, UnidirEdge> edgeIndexToEdge = new HashMap<>();
         HashSet<Integer> sourceCells = new HashSet<>();
         HashSet<Integer> sinkCells = new HashSet<>();
 
@@ -412,6 +424,18 @@ public class MPSWriter {
             vertexCellToIndex.put(graphVertices[i], i);
             vertexIndexToCell.put(i, graphVertices[i]);
         }
+        int index = 0;
+        for (Edge e : edgeConstructionCosts.keySet()) {
+            UnidirEdge e1 = new UnidirEdge(e.v1, e.v2);
+            edgeToIndex.put(e1, index);
+            edgeIndexToEdge.put(index, e1);
+            index++;
+
+            UnidirEdge e2 = new UnidirEdge(e.v2, e.v1);
+            edgeToIndex.put(e2, index);
+            edgeIndexToEdge.put(index, e2);
+            index++;
+        }
 
         // Build model
         // Make variables
@@ -432,42 +456,32 @@ public class MPSWriter {
         }
 
         // Pipeline between i and j with trend c
-        String[][][][] y = new String[graphVertices.length][graphVertices.length][linearComponents.length][timeConfiguration.length];
-        for (int i = 0; i < graphVertices.length; i++) {
-            for (int j = 0; j < graphVertices.length; j++) {
-                for (int c = 0; c < linearComponents.length; c++) {
-                    for (int t = 0; t < timeConfiguration.length; t++) {
-                        for (int dest : neighbors.get(vertexIndexToCell.get(i))) {
-                            if (dest == vertexIndexToCell.get(j)) {
-                                y[i][j][c][t] = "y[" + i + "][" + j + "][" + c + "][" + t + "]";
-                                variableBounds.put(y[i][j][c][t], new VariableBound("UP", 1));
-                            }
-                        }
-                    }
+        String[][][] y = new String[edgeToIndex.size()][linearComponents.length][timeConfiguration.length];
+        for (int e = 0; e < edgeToIndex.size(); e++) {
+            for (int c = 0; c < linearComponents.length; c++) {
+                for (int t = 0; t < timeConfiguration.length; t++) {
+                    y[e][c][t] = "y[" + e + "][" + c + "][" + t + "]";
+                    variableBounds.put(y[e][c][t], new VariableBound("UP", 1));
                 }
             }
         }
 
         // Purchased pipeline capacity
-        String[][][][] p = new String[graphVertices.length][graphVertices.length][linearComponents.length][timeConfiguration.length];
-        for (int i = 0; i < graphVertices.length; i++) {
-            for (int j = 0; j < graphVertices.length; j++) {
-                for (int c = 0; c < linearComponents.length; c++) {
-                    for (int t = 0; t < timeConfiguration.length; t++) {
-                        p[i][j][c][t] = "p[" + i + "][" + j + "][" + c + "][" + t + "]";
-                    }
+        String[][][] p = new String[edgeToIndex.size()][linearComponents.length][timeConfiguration.length];
+        for (int e = 0; e < edgeToIndex.size(); e++) {
+            for (int c = 0; c < linearComponents.length; c++) {
+                for (int t = 0; t < timeConfiguration.length; t++) {
+                    p[e][c][t] = "p[" + e + "][" + c + "][" + t + "]";
                 }
             }
         }
 
         // Pipeline hosting amount
-        String[][][][] x = new String[graphVertices.length][graphVertices.length][linearComponents.length][timeConfiguration.length];
-        for (int i = 0; i < graphVertices.length; i++) {
-            for (int j = 0; j < graphVertices.length; j++) {
-                for (int c = 0; c < linearComponents.length; c++) {
-                    for (int t = 0; t < timeConfiguration.length; t++) {
-                        x[i][j][c][t] = "x[" + i + "][" + j + "][" + c + "][" + t + "]";
-                    }
+        String[][][] x = new String[edgeToIndex.size()][linearComponents.length][timeConfiguration.length];
+        for (int e = 0; e < edgeToIndex.size(); e++) {
+            for (int c = 0; c < linearComponents.length; c++) {
+                for (int t = 0; t < timeConfiguration.length; t++) {
+                    x[e][c][t] = "x[" + e + "][" + c + "][" + t + "]";
                 }
             }
         }
@@ -475,54 +489,50 @@ public class MPSWriter {
         // Make constraints
         // Pipeline capacity constraints
         int constraintCounter = 1;
-        for (int src : graphVertices) {
-            for (int dest : neighbors.get(src)) {
-                for (int c = 0; c < linearComponents.length; c++) {
-                    for (int t = 0; t < timeConfiguration.length; t++) {
-                        String constraint = "A" + constraintCounter++;
-                        if (!contVariableToConstraints.containsKey(p[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c][t])) {
-                            contVariableToConstraints.put(p[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c][t], new HashSet<ConstraintTerm>());
-                        }
-                        contVariableToConstraints.get(p[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c][t]).add(new ConstraintTerm(constraint, 1));
-
-                        if (!intVariableToConstraints.containsKey(y[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c][t])) {
-                            intVariableToConstraints.put(y[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c][t], new HashSet<ConstraintTerm>());
-                        }
-                        intVariableToConstraints.get(y[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c][t]).add(new ConstraintTerm(constraint, -linearComponents[c].getMaxCapacity()));
-
-                        constraintToSign.put(constraint, "L");
-                        constraintRHS.put(constraint, 0.0);
-
-                        constraint = "A" + constraintCounter++;
-                        contVariableToConstraints.get(p[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c][t]).add(new ConstraintTerm(constraint, 1));
-                        constraintToSign.put(constraint, "G");
+        for (int e = 0; e < edgeToIndex.size(); e++) {
+            for (int c = 0; c < linearComponents.length; c++) {
+                for (int t = 0; t < timeConfiguration.length; t++) {
+                    String constraint = "A" + constraintCounter++;
+                    if (!contVariableToConstraints.containsKey(p[e][c][t])) {
+                        contVariableToConstraints.put(p[e][c][t], new HashSet<ConstraintTerm>());
                     }
+                    contVariableToConstraints.get(p[e][c][t]).add(new ConstraintTerm(constraint, 1));
+
+                    if (!intVariableToConstraints.containsKey(y[e][c][t])) {
+                        intVariableToConstraints.put(y[e][c][t], new HashSet<ConstraintTerm>());
+                    }
+                    intVariableToConstraints.get(y[e][c][t]).add(new ConstraintTerm(constraint, -linearComponents[c].getMaxCapacity()));
+
+                    constraintToSign.put(constraint, "L");
+                    constraintRHS.put(constraint, 0.0);
+
+                    constraint = "A" + constraintCounter++;
+                    contVariableToConstraints.get(p[e][c][t]).add(new ConstraintTerm(constraint, 1));
+                    constraintToSign.put(constraint, "G");
                 }
             }
         }
 
         // Ensure new and existing pipeline have enough capacity
         constraintCounter = 1;
-        for (int src : graphVertices) {
-            for (int dest : neighbors.get(src)) {
-                for (int c = 0; c < linearComponents.length; c++) {
-                    for (int t = 0; t < timeConfiguration.length; t++) {
-                        String constraint = "B" + constraintCounter++;
-                        if (!contVariableToConstraints.containsKey(x[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c][t])) {
-                            contVariableToConstraints.put(x[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c][t], new HashSet<ConstraintTerm>());
-                        }
-                        contVariableToConstraints.get(x[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c][t]).add(new ConstraintTerm(constraint, 1));
-
-                        for (int tau = 0; tau <= t; tau++) {
-                            if (!contVariableToConstraints.containsKey(p[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c][tau])) {
-                                contVariableToConstraints.put(p[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c][tau], new HashSet<ConstraintTerm>());
-                            }
-                            contVariableToConstraints.get(p[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c][tau]).add(new ConstraintTerm(constraint, -1));
-                        }
-
-                        constraintToSign.put(constraint, "L");
-                        constraintRHS.put(constraint, 0.0);
+        for (int e = 0; e < edgeToIndex.size(); e++) {
+            for (int c = 0; c < linearComponents.length; c++) {
+                for (int t = 0; t < timeConfiguration.length; t++) {
+                    String constraint = "B" + constraintCounter++;
+                    if (!contVariableToConstraints.containsKey(x[e][c][t])) {
+                        contVariableToConstraints.put(x[e][c][t], new HashSet<ConstraintTerm>());
                     }
+                    contVariableToConstraints.get(x[e][c][t]).add(new ConstraintTerm(constraint, 1));
+
+                    for (int tau = 0; tau <= t; tau++) {
+                        if (!contVariableToConstraints.containsKey(p[e][c][tau])) {
+                            contVariableToConstraints.put(p[e][c][tau], new HashSet<ConstraintTerm>());
+                        }
+                        contVariableToConstraints.get(p[e][c][tau]).add(new ConstraintTerm(constraint, -1));
+                    }
+
+                    constraintToSign.put(constraint, "L");
+                    constraintRHS.put(constraint, 0.0);
                 }
             }
         }
@@ -533,20 +543,22 @@ public class MPSWriter {
             for (int t = 0; t < timeConfiguration.length; t++) {
                 String constraint = "C" + constraintCounter++;
                 for (int dest : neighbors.get(src)) {
+                    UnidirEdge edge = new UnidirEdge(src, dest);
                     for (int c = 0; c < linearComponents.length; c++) {
-                        if (!contVariableToConstraints.containsKey(x[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c][t])) {
-                            contVariableToConstraints.put(x[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c][t], new HashSet<ConstraintTerm>());
+                        if (!contVariableToConstraints.containsKey(x[edgeToIndex.get(edge)][c][t])) {
+                            contVariableToConstraints.put(x[edgeToIndex.get(edge)][c][t], new HashSet<ConstraintTerm>());
                         }
-                        contVariableToConstraints.get(x[vertexCellToIndex.get(src)][vertexCellToIndex.get(dest)][c][t]).add(new ConstraintTerm(constraint, 1));
+                        contVariableToConstraints.get(x[edgeToIndex.get(edge)][c][t]).add(new ConstraintTerm(constraint, 1));
                     }
                 }
 
                 for (int dest : neighbors.get(src)) {
+                    UnidirEdge edge = new UnidirEdge(dest, src);
                     for (int c = 0; c < linearComponents.length; c++) {
-                        if (!contVariableToConstraints.containsKey(x[vertexCellToIndex.get(dest)][vertexCellToIndex.get(src)][c][t])) {
-                            contVariableToConstraints.put(x[vertexCellToIndex.get(dest)][vertexCellToIndex.get(src)][c][t], new HashSet<ConstraintTerm>());
+                        if (!contVariableToConstraints.containsKey(x[edgeToIndex.get(edge)][c][t])) {
+                            contVariableToConstraints.put(x[edgeToIndex.get(edge)][c][t], new HashSet<ConstraintTerm>());
                         }
-                        contVariableToConstraints.get(x[vertexCellToIndex.get(dest)][vertexCellToIndex.get(src)][c][t]).add(new ConstraintTerm(constraint, -1));
+                        contVariableToConstraints.get(x[edgeToIndex.get(edge)][c][t]).add(new ConstraintTerm(constraint, -1));
                     }
                 }
 
@@ -648,7 +660,7 @@ public class MPSWriter {
         constraintToSign.put("H" + num, "E");
         constraintRHS.put("H" + num, crf);
         num++;
-        
+
         for (int t = 0; t < timeConfiguration.length; t++) {
             contVariableToConstraints.put("N" + t, new HashSet<ConstraintTerm>());
             contVariableToConstraints.get("N" + t).add(new ConstraintTerm("H" + num, 1));
@@ -668,27 +680,28 @@ public class MPSWriter {
             }
         }
 
-        for (int vertex : graphVertices) {
-            for (int neighbor : neighbors.get(vertex)) {
-                for (int c = 0; c < linearComponents.length; c++) {
-                    for (int t = 0; t < timeConfiguration.length; t++) {
-                        double remainingTime = 0;
-                        for (int tau = t; tau < timeConfiguration.length; tau++) {
-                            remainingTime += timeConfiguration[tau][1];
-                        }
-
-                        if (!intVariableToConstraints.containsKey(y[vertexCellToIndex.get(vertex)][vertexCellToIndex.get(neighbor)][c][t])) {
-                            intVariableToConstraints.put(y[vertexCellToIndex.get(vertex)][vertexCellToIndex.get(neighbor)][c][t], new HashSet<ConstraintTerm>());
-                        }
-                        double coefficient = (linearComponents[c].getConIntercept() * edgeConstructionCosts.get(new Edge(vertex, neighbor)) + linearComponents[c].getRowIntercept() * edgeRightOfWayCosts.get(new Edge(vertex, neighbor))) * crf;
-                        intVariableToConstraints.get(y[vertexCellToIndex.get(vertex)][vertexCellToIndex.get(neighbor)][c][t]).add(new ConstraintTerm(constraint, coefficient * remainingTime));
-
-                        if (!contVariableToConstraints.containsKey(p[vertexCellToIndex.get(vertex)][vertexCellToIndex.get(neighbor)][c][t])) {
-                            contVariableToConstraints.put(p[vertexCellToIndex.get(vertex)][vertexCellToIndex.get(neighbor)][c][t], new HashSet<ConstraintTerm>());
-                        }
-                        coefficient = (linearComponents[c].getConSlope() * edgeConstructionCosts.get(new Edge(vertex, neighbor)) + linearComponents[c].getRowSlope() * edgeRightOfWayCosts.get(new Edge(vertex, neighbor))) * crf / pipeUtilization;
-                        contVariableToConstraints.get(p[vertexCellToIndex.get(vertex)][vertexCellToIndex.get(neighbor)][c][t]).add(new ConstraintTerm(constraint, coefficient * remainingTime));
+        for (int e = 0; e < edgeToIndex.size(); e++) {
+            for (int c = 0; c < linearComponents.length; c++) {
+                for (int t = 0; t < timeConfiguration.length; t++) {
+                    double remainingTime = 0;
+                    for (int tau = t; tau < timeConfiguration.length; tau++) {
+                        remainingTime += timeConfiguration[tau][1];
                     }
+
+                    UnidirEdge unidirEdge = edgeIndexToEdge.get(e);
+                    Edge bidirEdge = new Edge(unidirEdge.v1, unidirEdge.v2);
+
+                    if (!intVariableToConstraints.containsKey(y[e][c][t])) {
+                        intVariableToConstraints.put(y[e][c][t], new HashSet<ConstraintTerm>());
+                    }
+                    double coefficient = (linearComponents[c].getConIntercept() * edgeConstructionCosts.get(bidirEdge) + linearComponents[c].getRowIntercept() * edgeRightOfWayCosts.get(bidirEdge)) * crf;
+                    intVariableToConstraints.get(y[e][c][t]).add(new ConstraintTerm(constraint, coefficient * remainingTime));
+
+                    if (!contVariableToConstraints.containsKey(p[e][c][t])) {
+                        contVariableToConstraints.put(p[e][c][t], new HashSet<ConstraintTerm>());
+                    }
+                    coefficient = (linearComponents[c].getConSlope() * edgeConstructionCosts.get(bidirEdge) + linearComponents[c].getRowSlope() * edgeRightOfWayCosts.get(bidirEdge)) * crf / pipeUtilization;
+                    contVariableToConstraints.get(p[e][c][t]).add(new ConstraintTerm(constraint, coefficient * remainingTime));
                 }
             }
         }
