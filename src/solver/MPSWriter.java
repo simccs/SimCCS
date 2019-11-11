@@ -210,8 +210,6 @@ public class MPSWriter {
                             contVariableToConstraints.put(a[sourceCellToIndex.get(source)], new HashSet<ConstraintTerm>());
                         }
                         contVariableToConstraints.get(a[sourceCellToIndex.get(source)]).add(new ConstraintTerm(constraint, -1));
-
-                        constraintToSign.put(constraint, "E");
                     }
                 }
             }
@@ -222,15 +220,11 @@ public class MPSWriter {
                             contVariableToConstraints.put(b[sinkCellToIndex.get(sink)], new HashSet<ConstraintTerm>());
                         }
                         contVariableToConstraints.get(b[sinkCellToIndex.get(sink)]).add(new ConstraintTerm(constraint, 1));
-
-                        constraintToSign.put(constraint, "E");
                     }
                 }
-
-            } else {
-                constraintToSign.put(constraint, "E");
             }
-
+            
+            constraintToSign.put(constraint, "E");
         }
 
         // Capture capped by max production
@@ -570,8 +564,6 @@ public class MPSWriter {
                                 contVariableToConstraints.put(a[sourceCellToIndex.get(source)][t], new HashSet<ConstraintTerm>());
                             }
                             contVariableToConstraints.get(a[sourceCellToIndex.get(source)][t]).add(new ConstraintTerm(constraint, -1));
-
-                            constraintToSign.put(constraint, "E");
                         }
                     }
                 }
@@ -582,14 +574,11 @@ public class MPSWriter {
                                 contVariableToConstraints.put(b[sinkCellToIndex.get(sink)][t], new HashSet<ConstraintTerm>());
                             }
                             contVariableToConstraints.get(b[sinkCellToIndex.get(sink)][t]).add(new ConstraintTerm(constraint, 1));
-
-                            constraintToSign.put(constraint, "E");
                         }
                     }
-
-                } else {
-                    constraintToSign.put(constraint, "E");
                 }
+                
+                constraintToSign.put(constraint, "E");
             }
         }
 
@@ -857,8 +846,6 @@ public class MPSWriter {
                             contVariableToConstraints.put(a[sourceCellToIndex.get(source)], new HashSet<ConstraintTerm>());
                         }
                         contVariableToConstraints.get(a[sourceCellToIndex.get(source)]).add(new ConstraintTerm(constraint, -1));
-
-                        constraintToSign.put(constraint, "E");
                     }
                 }
             }
@@ -869,15 +856,11 @@ public class MPSWriter {
                             contVariableToConstraints.put(b[sinkCellToIndex.get(sink)], new HashSet<ConstraintTerm>());
                         }
                         contVariableToConstraints.get(b[sinkCellToIndex.get(sink)]).add(new ConstraintTerm(constraint, 1));
-
-                        constraintToSign.put(constraint, "E");
                     }
                 }
 
-            } else {
-                constraintToSign.put(constraint, "E");
             }
-
+            constraintToSign.put(constraint, "E");
         }
 
         // Capture capped by max production
