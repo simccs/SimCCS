@@ -57,7 +57,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
 import javafx.stage.Stage;
-import solver.Heuristic;
+import solver.GreedyHeuristic;
 
 /**
  *
@@ -244,20 +244,30 @@ public class ControlActions {
         }
     }
 
-    public void generateMPSFile(String crf, String numYears, String capacityTarget, int modelVersion) {
+    public void generateMPSFile(String crf, String numYears, String capacityTarget, int modelVersion, String heuristicVersion) {
         if (scenario != "") {
             System.out.println("Writing MPS File...");
             data.setTargetCaptureAmount(Double.parseDouble(capacityTarget));    //Heuristic
             data.setCrf(Double.parseDouble(crf));   //Heuristic
             data.setProjectLength(Integer.parseInt(numYears));    // Heuristic
 
-            if (modelVersion == 1) {
-                MPSWriter.writeCapPriceMPS("cap.mps", data, Double.parseDouble(crf), Double.parseDouble(numYears), Double.parseDouble(capacityTarget), basePath, dataset, scenario, modelVersion);
-            } else if (modelVersion == 2) {
-                MPSWriter.writeCapPriceMPS("price.mps", data, Double.parseDouble(crf), Double.parseDouble(numYears), Double.parseDouble(capacityTarget), basePath, dataset, scenario, modelVersion);
-            } else if (modelVersion == 3) {
-                DataInOut.loadTimeConfiguration();
-                MPSWriter.writeSimpleTimeMPS("time.mps", data, Double.parseDouble(crf), basePath, dataset, scenario);
+            if (heuristicVersion.equals("f")) {
+                if (modelVersion == 1) {
+                    MPSWriter.writeFlowHeuristicMPS("flowCap.mps", data, Double.parseDouble(crf), Double.parseDouble(numYears), Double.parseDouble(capacityTarget), basePath, dataset, scenario, modelVersion);
+                } else if (modelVersion == 2) {
+                    //TODO
+                } else if (modelVersion == 3) {
+                    //TODO
+                }
+            } else {
+                if (modelVersion == 1) {
+                    MPSWriter.writeCapPriceMPS("cap.mps", data, Double.parseDouble(crf), Double.parseDouble(numYears), Double.parseDouble(capacityTarget), basePath, dataset, scenario, modelVersion);
+                } else if (modelVersion == 2) {
+                    MPSWriter.writeCapPriceMPS("price.mps", data, Double.parseDouble(crf), Double.parseDouble(numYears), Double.parseDouble(capacityTarget), basePath, dataset, scenario, modelVersion);
+                } else if (modelVersion == 3) {
+                    DataInOut.loadTimeConfiguration();
+                    MPSWriter.writeSimpleTimeMPS("time.mps", data, Double.parseDouble(crf), basePath, dataset, scenario);
+                }
             }
         }
     }
@@ -293,10 +303,10 @@ public class ControlActions {
             // Run solver.
             File solutionPriceDirectory = new File(basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + "price-" + price + "h");
             solutionPriceDirectory.mkdir();
-            runHeuristic(crf, numYears, inputPrice, numPairs, modelVersion, solutionPriceDirectory);
+            runGreedyHeuristic(crf, numYears, inputPrice, numPairs, modelVersion, solutionPriceDirectory);
 
             // Create shapefiles.
-            Solution soln = DataInOut.loadHeuristicSolution(basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + "price-" + price + "h");
+            Solution soln = DataInOut.loadGreedyHeuristicSolution(basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + "price-" + price + "h");
             DataInOut.makeShapeFiles(basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + "price-" + price + "h", soln);
             DataInOut.makeCandidateShapeFiles(basePath + "/" + dataset + "/Scenarios/" + scenario);
             DataInOut.makeSolutionFile(basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + "price-" + price + "h", soln);
@@ -312,28 +322,37 @@ public class ControlActions {
     }
 
     // Heuristic
-    public void heuristicSolve(String crf, String numYears, String capacityTarget, String numPairs, int modelVersion) {
+    public void greedyHeuristicSolve(String heuristicVersion, String crf, String numYears, String capacityTarget, String numPairs, int modelVersion) {
         DateFormat dateFormat = new SimpleDateFormat("ddMMyyy-HHmmssss");
         Date date = new Date();
-        String run = "run" + dateFormat.format(date) + "h";
-        File solutionDirectory = new File(basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + run);
-        solutionDirectory.mkdir();
-
-        runHeuristic(crf, numYears, capacityTarget, numPairs, modelVersion, solutionDirectory);
+        String run = "";
+        if (heuristicVersion.equals("g")) {
+            run = "greedy" + dateFormat.format(date);
+            File solutionDirectory = new File(basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + run);
+            solutionDirectory.mkdir();
+            runGreedyHeuristic(crf, numYears, capacityTarget, numPairs, modelVersion, solutionDirectory);
+        } else if (heuristicVersion.equals("f")) {
+            runFlowHeuristic(crf, numYears, capacityTarget, modelVersion);
+        }
     }
 
-    private void runHeuristic(String crf, String numYears, String capacityTarget, String numPairs, int modelVersion, File directory) {
+    private void runGreedyHeuristic(String crf, String numYears, String capacityTarget, String numPairs, int modelVersion, File directory) {
         // Get model data
         data.setTargetCaptureAmount(Double.parseDouble(capacityTarget));
         data.setCrf(Double.parseDouble(crf));
         data.setProjectLength(Integer.parseInt(numYears));
 
         // Run heuristic
-        Heuristic heuristic = new Heuristic(data);
+        GreedyHeuristic heuristic = new GreedyHeuristic(data);
         heuristic.solve(Integer.parseInt(numPairs), modelVersion);
 
         // Save solution
         DataInOut.saveHeuristicSolution(directory, heuristic);
+    }
+
+    private void runFlowHeuristic(String crf, String numYears, String capacityTarget, int modelVersion) {
+        generateMPSFile(crf, numYears, capacityTarget, modelVersion, "f");
+        runCPLEX();
     }
 
     public void runCPLEX() {
@@ -353,6 +372,8 @@ public class ControlActions {
                         modelVersion = 2;
                     } else if (f.getName().startsWith("time")) {
                         modelVersion = 3;
+                    } else if (f.getName().startsWith("flowCap")) {
+                        modelVersion = 4;
                     }
                 }
             }
@@ -367,6 +388,8 @@ public class ControlActions {
                 run += "price";
             } else if (modelVersion == 3) {
                 run += "time";
+            } else if (modelVersion == 4) {
+                run += "flowCap";
             }
             run += dateFormat.format(date);
             File solutionDirectory = new File(basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + run);
@@ -383,6 +406,8 @@ public class ControlActions {
                     mpsFileName += "price.mps";
                 } else if (modelVersion == 3) {
                     mpsFileName += "time.mps";
+                } else if (modelVersion == 4) {
+                    mpsFileName += "flowCap.mps";
                 }
 
                 mipPath += mpsFileName;
@@ -573,8 +598,11 @@ public class ControlActions {
         if (file != null && !file.equals("None")) {
             String solutionPath = basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + file;
 
-            if (file.endsWith("h")) {
-                Solution soln = DataInOut.loadHeuristicSolution(solutionPath);
+            if (file.contains("greedy")) {
+                Solution soln = DataInOut.loadGreedyHeuristicSolution(solutionPath);
+                displaySolution(file, soln, solutionValues);
+            } else if (file.contains("flow")) {
+                Solution soln = DataInOut.loadSolution(solutionPath, -1);
                 displaySolution(file, soln, solutionValues);
             } else if (file.contains("cap")) {
                 Solution soln = DataInOut.loadSolution(solutionPath, -1);
@@ -598,7 +626,7 @@ public class ControlActions {
             }
         }
     }
-    
+
     public void selectSubSolution(String parent, String solutionName, Label[] solutionValues) {
         if (solutionName != null && solutionName.contains("timeslot-")) {
             int timeslot = Integer.parseInt(solutionName.substring(9)) - 1;

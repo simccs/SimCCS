@@ -450,7 +450,7 @@ public class Gui extends Application {
                 } else if (timeVersion.isSelected()) {
                     modelVersion = 3;
                 }
-                controlActions.generateMPSFile(crfValue.getText(), yearValue.getText(), paramValue.getText(), modelVersion);
+                controlActions.generateMPSFile(crfValue.getText(), yearValue.getText(), paramValue.getText(), modelVersion, "");
             }
         });
         
@@ -495,28 +495,48 @@ public class Gui extends Application {
         heuristicSolutionPane.setMinSize(0, 0);
         
         Label numPairsLabel = new Label("Batch Size");
-        numPairsLabel.setLayoutX(30);
+        numPairsLabel.setLayoutX(75);
         numPairsLabel.setLayoutY(8);
         heuristicSolutionPane.getChildren().add(numPairsLabel);
         TextField numPairsValue = new TextField("1");
         numPairsValue.setEditable(true);
         numPairsValue.setPrefColumnCount(2);
-        numPairsValue.setLayoutX(120);
+        numPairsValue.setLayoutX(143);
         numPairsValue.setLayoutY(4);
         heuristicSolutionPane.getChildren().add(numPairsValue);
         
-        // Heuristic
-        Button heuristicSolve = new Button("Solve With Heuristic");
-        heuristicSolve.setLayoutX(25);
-        heuristicSolve.setLayoutY(35);
-        heuristicSolutionPane.getChildren().add(heuristicSolve);
-        heuristicSolve.setOnAction(new EventHandler<ActionEvent>() {
+        // Gredy Heuristic
+        Button greedyHeuristicSolve = new Button("Greedy");
+        greedyHeuristicSolve.setLayoutX(5);
+        greedyHeuristicSolve.setLayoutY(5);
+        heuristicSolutionPane.getChildren().add(greedyHeuristicSolve);
+        greedyHeuristicSolve.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent e) {
                 int modelVersion = 0;
                 if (capVersion.isSelected()) {
                     modelVersion = 1;
-                    controlActions.heuristicSolve(crfValue.getText(), yearValue.getText(), paramValue.getText(),numPairsValue.getText(), modelVersion);
+                    controlActions.greedyHeuristicSolve("g", crfValue.getText(), yearValue.getText(), paramValue.getText(),numPairsValue.getText(), modelVersion);
+                } else if (priceVersion.isSelected()) {
+                    modelVersion = 2;
+                    //controlActions.heuristicSolve(crfValue.getText(), yearValue.getText(), paramValue.getText(),numPairsValue.getText(), modelVersion);
+                    controlActions.runPriceSimulation(crfValue.getText(), yearValue.getText(), paramValue.getText(),numPairsValue.getText(), modelVersion);
+                }
+            }
+        });
+        
+        // Flow Heuristic
+        Button flowHeuristicSolve = new Button("Flow");
+        flowHeuristicSolve.setLayoutX(5);
+        flowHeuristicSolve.setLayoutY(37);
+        heuristicSolutionPane.getChildren().add(flowHeuristicSolve);
+        flowHeuristicSolve.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent e) {
+                int modelVersion = 0;
+                if (capVersion.isSelected()) {
+                    modelVersion = 1;
+                    controlActions.greedyHeuristicSolve("f", crfValue.getText(), yearValue.getText(), paramValue.getText(),numPairsValue.getText(), modelVersion);
                 } else if (priceVersion.isSelected()) {
                     modelVersion = 2;
                     //controlActions.heuristicSolve(crfValue.getText(), yearValue.getText(), paramValue.getText(),numPairsValue.getText(), modelVersion);
@@ -526,9 +546,9 @@ public class Gui extends Application {
         });
         
         // Populate heuristic solution method pane.
-        TitledPane heuristicSolutionContainer = new TitledPane("Heuristic Solver", heuristicSolutionPane);
+        TitledPane heuristicSolutionContainer = new TitledPane("Heuristic Solvers", heuristicSolutionPane);
         heuristicSolutionContainer.setCollapsible(false);
-        heuristicSolutionContainer.setPrefSize(192, 92);
+        heuristicSolutionContainer.setPrefSize(192, 97);
         heuristicSolutionContainer.setLayoutX(14);
         heuristicSolutionContainer.setLayoutY(260);
         modelPane.getChildren().add(heuristicSolutionContainer);

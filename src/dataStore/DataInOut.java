@@ -36,7 +36,7 @@ import java.util.TreeMap;
 
 import static utilities.Utilities.*;
 
-import solver.Heuristic;
+import solver.GreedyHeuristic;
 
 /**
  *
@@ -607,7 +607,7 @@ public class DataInOut {
     }
 
     // Heuristic
-    public static void saveHeuristicSolution(File solutionDirectory, Heuristic heuristic) {
+    public static void saveHeuristicSolution(File solutionDirectory, GreedyHeuristic heuristic) {
         // Collect data.
         Source[] sources = heuristic.getSources();
         Sink[] sinks = heuristic.getSinks();
@@ -656,7 +656,7 @@ public class DataInOut {
     }
 
     // Heuristic
-    public static Solution loadHeuristicSolution(String solutionPath) {
+    public static Solution loadGreedyHeuristicSolution(String solutionPath) {
         Solution soln = new Solution();
         Source[] sources = data.getSources();
         Sink[] sinks = data.getSinks();
@@ -714,6 +714,8 @@ public class DataInOut {
         double threshold = .000001;
         Solution soln = new Solution();
 
+        boolean ilp = true; //ILP vs LP
+
         // Make file paths.
         File solFile = null;
         File mpsFile = null;
@@ -722,6 +724,9 @@ public class DataInOut {
                 solFile = f;
             } else if (f.getName().endsWith(".mps")) {
                 mpsFile = f;
+                if (f.getName().startsWith("flowCap")) {
+                    ilp = false;
+                }
             }
         }
 
@@ -778,7 +783,14 @@ public class DataInOut {
             line = br.readLine();
 
             while (!line.equals(" </variables>")) {
-                String[] variable = split(line);
+                String[] partition = line.split("\"");
+                String[] variable;
+                if (ilp) {
+                    variable = new String[]{partition[1], partition[3], partition[5]};
+                } else {
+                    variable = new String[]{partition[1], partition[3], partition[7]};
+                }
+
                 if (Double.parseDouble(variable[2]) > threshold) {
                     variableValues.put(variable[0], Double.parseDouble(variable[2]));
                     String[] components = variable[0].split("\\]\\[|\\[|\\]");
@@ -789,11 +801,15 @@ public class DataInOut {
                             soln.addSinkStorageAmount(sinks[Integer.parseInt(components[1])], Double.parseDouble(variable[2]));
                         } else if (components[0].equals("p")) {
                             if (components.length == 4) {
-                                soln.addEdgeTransportAmount(new Edge(vertexIndexToCell.get(Integer.parseInt(components[1])), vertexIndexToCell.get(Integer.parseInt(components[2]))), Double.parseDouble(variable[2]));
+                                soln.addEdgeTransportAmount(new Edge(vertexIndexToCell.get(Integer.parseInt(components[1])), vertexIndexToCell.get(Integer.parseInt(components[2]))), Double.parseDouble(variable[2]));  
+                                soln.setEdgeTrend(new Edge(vertexIndexToCell.get(Integer.parseInt(components[1])), vertexIndexToCell.get(Integer.parseInt(components[2]))), Integer.parseInt(components[3]));
                             } else {
                                 UnidirEdge unidirEdge = edgeIndexToEdge.get(Integer.parseInt(components[1]));
                                 soln.addEdgeTransportAmount(new Edge(unidirEdge.v1, unidirEdge.v2), Double.parseDouble(variable[2]));
+                                soln.setEdgeTrend(new Edge(unidirEdge.v1, unidirEdge.v2), Integer.parseInt(components[2]));
                             }
+                        } else if (components[0].equals("w")) {
+                            soln.addSinkNumWells(sinks[Integer.parseInt(components[1])], Integer.parseInt(variable[2]));
                         }
                     } else {
                         if (components[0].equals("a") && (Integer.parseInt(components[2]) == timeslot)) {
@@ -811,6 +827,8 @@ public class DataInOut {
                                     soln.addEdgeTransportAmount(new Edge(unidirEdge.v1, unidirEdge.v2), Double.parseDouble(variable[2]));
                                 }
                             }
+                        } else if (components[0].equals("w") && (Integer.parseInt(components[2]) == timeslot)) {
+                            soln.addSinkNumWells(sinks[Integer.parseInt(components[1])], Integer.parseInt(variable[2]));
                         }
                     }
 
@@ -833,73 +851,78 @@ public class DataInOut {
             System.out.println(e.getMessage());
         }
 
-        try (BufferedReader br = new BufferedReader(new FileReader(mpsFile))) {
-            String line = br.readLine();
-            while (!line.equals("COLUMNS")) {
+        // load costs into solution.
+        if (ilp) {
+            try (BufferedReader br = new BufferedReader(new FileReader(mpsFile))) {
+                String line = br.readLine();
+                while (!line.equals("COLUMNS")) {
+                    line = br.readLine();
+                }
+                br.readLine();
                 line = br.readLine();
-            }
-            br.readLine();
-            line = br.readLine();
 
-            while (!line.equals("RHS")) {
-                String[] column = line.replaceFirst("\\s+", "").split("\\s+");
-                if (column[1].equals("OBJ") && variableValues.keySet().contains(column[0])) {
-                    String[] components = column[0].split("\\]\\[|\\[|\\]");
-                    if (timeslot == -1) {
-                        if (column[0].charAt(0) == 's' || column[0].charAt(0) == 'a') {
-                            double cost = variableValues.get(column[0]) * Double.parseDouble(column[2]);
-                            soln.addSourceCostComponent(sources[Integer.parseInt(components[1])], cost);
-                        } else if (column[0].charAt(0) == 'r' || column[0].charAt(0) == 'w' || column[0].charAt(0) == 'b') {
-                            double cost = variableValues.get(column[0]) * Double.parseDouble(column[2]);
-                            soln.addSinkCostComponent(sinks[Integer.parseInt(components[1])], cost);
-                        } else if (column[0].charAt(0) == 'p' || column[0].charAt(0) == 'y') {
-                            double cost = variableValues.get(column[0]) * Double.parseDouble(column[2]);
-                            if (components.length == 4) {
-                                soln.addEdgeCostComponent(new Edge(vertexIndexToCell.get(Integer.parseInt(components[1])), vertexIndexToCell.get(Integer.parseInt(components[2]))), cost);
-                            } else {
-                                UnidirEdge unidirEdge = edgeIndexToEdge.get(Integer.parseInt(components[1]));
-                                soln.addEdgeCostComponent(new Edge(unidirEdge.v1, unidirEdge.v2), cost);
-                            }
-                        }
-                    } else {
-                        if ((column[0].charAt(0) == 's' || column[0].charAt(0) == 'a') && (Integer.parseInt(components[2]) == timeslot)) {
-                            double cost = variableValues.get(column[0]) * Double.parseDouble(column[2]) / timeslotLengths.get(timeslot);
-                            soln.addSourceCostComponent(sources[Integer.parseInt(components[1])], cost);
-                        } else if ((column[0].charAt(0) == 'r' || column[0].charAt(0) == 'w' || column[0].charAt(0) == 'b') && (Integer.parseInt(components[2]) == timeslot)) {
-                            double cost = variableValues.get(column[0]) * Double.parseDouble(column[2]) / timeslotLengths.get(timeslot);
-                            soln.addSinkCostComponent(sinks[Integer.parseInt(components[1])], cost);
-                        } else if (column[0].charAt(0) == 'p' || column[0].charAt(0) == 'y') {
-                            if (components.length == 5) {
-                                // Need to account for pipelines still being paid off in current timeslot.
-                                int timeslotOpened = Integer.parseInt(components[4]);
-                                if (timeslotOpened <= timeslot) {
-                                    // Find time remaing.
-                                    int timeRemaining = 0;
-                                    for (int t = timeslotOpened; t < timeslotLengths.size(); t++) {
-                                        timeRemaining += timeslotLengths.get(t);
-                                    }
-                                    double cost = variableValues.get(column[0]) * Double.parseDouble(column[2]) / timeRemaining;
+                while (!line.equals("RHS")) {
+                    String[] column = line.replaceFirst("\\s+", "").split("\\s+");
+                    if (column[1].equals("OBJ") && variableValues.keySet().contains(column[0])) {
+                        String[] components = column[0].split("\\]\\[|\\[|\\]");
+                        if (timeslot == -1) {
+                            if (column[0].charAt(0) == 's' || column[0].charAt(0) == 'a') {
+                                double cost = variableValues.get(column[0]) * Double.parseDouble(column[2]);
+                                soln.addSourceCostComponent(sources[Integer.parseInt(components[1])], cost);
+                            } else if (column[0].charAt(0) == 'r' || column[0].charAt(0) == 'w' || column[0].charAt(0) == 'b') {
+                                double cost = variableValues.get(column[0]) * Double.parseDouble(column[2]);
+                                soln.addSinkCostComponent(sinks[Integer.parseInt(components[1])], cost);
+                            } else if (column[0].charAt(0) == 'p' || column[0].charAt(0) == 'y') {
+                                double cost = variableValues.get(column[0]) * Double.parseDouble(column[2]);
+                                if (components.length == 4) {
                                     soln.addEdgeCostComponent(new Edge(vertexIndexToCell.get(Integer.parseInt(components[1])), vertexIndexToCell.get(Integer.parseInt(components[2]))), cost);
-                                }
-                            } else {
-                                int timeslotOpened = Integer.parseInt(components[3]);
-                                if (timeslotOpened <= timeslot) {
-                                    int timeRemaining = 0;
-                                    for (int t = timeslotOpened; t < timeslotLengths.size(); t++) {
-                                        timeRemaining += timeslotLengths.get(t);
-                                    }
+                                } else {
                                     UnidirEdge unidirEdge = edgeIndexToEdge.get(Integer.parseInt(components[1]));
-                                    double cost = variableValues.get(column[0]) * Double.parseDouble(column[2]) / timeRemaining;
                                     soln.addEdgeCostComponent(new Edge(unidirEdge.v1, unidirEdge.v2), cost);
+                                }
+                            }
+                        } else {
+                            if ((column[0].charAt(0) == 's' || column[0].charAt(0) == 'a') && (Integer.parseInt(components[2]) == timeslot)) {
+                                double cost = variableValues.get(column[0]) * Double.parseDouble(column[2]) / timeslotLengths.get(timeslot);
+                                soln.addSourceCostComponent(sources[Integer.parseInt(components[1])], cost);
+                            } else if ((column[0].charAt(0) == 'r' || column[0].charAt(0) == 'w' || column[0].charAt(0) == 'b') && (Integer.parseInt(components[2]) == timeslot)) {
+                                double cost = variableValues.get(column[0]) * Double.parseDouble(column[2]) / timeslotLengths.get(timeslot);
+                                soln.addSinkCostComponent(sinks[Integer.parseInt(components[1])], cost);
+                            } else if (column[0].charAt(0) == 'p' || column[0].charAt(0) == 'y') {
+                                if (components.length == 5) {
+                                    // Need to account for pipelines still being paid off in current timeslot.
+                                    int timeslotOpened = Integer.parseInt(components[4]);
+                                    if (timeslotOpened <= timeslot) {
+                                        // Find time remaing.
+                                        int timeRemaining = 0;
+                                        for (int t = timeslotOpened; t < timeslotLengths.size(); t++) {
+                                            timeRemaining += timeslotLengths.get(t);
+                                        }
+                                        double cost = variableValues.get(column[0]) * Double.parseDouble(column[2]) / timeRemaining;
+                                        soln.addEdgeCostComponent(new Edge(vertexIndexToCell.get(Integer.parseInt(components[1])), vertexIndexToCell.get(Integer.parseInt(components[2]))), cost);
+                                    }
+                                } else {
+                                    int timeslotOpened = Integer.parseInt(components[3]);
+                                    if (timeslotOpened <= timeslot) {
+                                        int timeRemaining = 0;
+                                        for (int t = timeslotOpened; t < timeslotLengths.size(); t++) {
+                                            timeRemaining += timeslotLengths.get(t);
+                                        }
+                                        UnidirEdge unidirEdge = edgeIndexToEdge.get(Integer.parseInt(components[1]));
+                                        double cost = variableValues.get(column[0]) * Double.parseDouble(column[2]) / timeRemaining;
+                                        soln.addEdgeCostComponent(new Edge(unidirEdge.v1, unidirEdge.v2), cost);
+                                    }
                                 }
                             }
                         }
                     }
+                    line = br.readLine();
                 }
-                line = br.readLine();
+            } catch (IOException e) {
+                System.out.println(e.getMessage());
             }
-        } catch (IOException e) {
-            System.out.println(e.getMessage());
+        } else {
+            soln.setSolutionCosts(data);
         }
 
         return soln;
@@ -930,11 +953,6 @@ public class DataInOut {
         }
 
         return timeslots.size();
-    }
-
-    private static String[] split(String variable) {
-        String[] components = variable.split("\"");
-        return new String[]{components[1], components[3], components[5]};
     }
 
     public static void makeShapeFiles(String path, Solution soln) {

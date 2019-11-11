@@ -21,9 +21,9 @@ import static utilities.Utilities.convertIntegerArray;
 
 /**
  *
- * @author t92t161
+ * @author yaw
  */
-public class Heuristic {
+public class GreedyHeuristic {
 
     private DataStorer data;
 
@@ -37,7 +37,7 @@ public class Heuristic {
     private HashMap<Integer, Integer> cellNumToVertexNum;
     private HashMap<Integer, HashSet<Integer>> neighbors;
 
-    public Heuristic(DataStorer data) {
+    public GreedyHeuristic(DataStorer data) {
         this.data = data;
 
         sources = data.getSources();
@@ -343,15 +343,15 @@ public class Heuristic {
         int snkVertexNum = cellNumToVertexNum.get(snk.getCellNum());
 
         int numNodes = graphVertices.length;
-        PriorityQueue<Heuristic.Data> pQueue = new PriorityQueue<>(numNodes);
+        PriorityQueue<GreedyHeuristic.Data> pQueue = new PriorityQueue<>(numNodes);
         double[] costs = new double[numNodes];
         int[] previous = new int[numNodes];
-        Heuristic.Data[] map = new Heuristic.Data[numNodes];
+        GreedyHeuristic.Data[] map = new GreedyHeuristic.Data[numNodes];
 
         for (int vertex = 0; vertex < numNodes; vertex++) {
             costs[vertex] = Double.MAX_VALUE;
             previous[vertex] = -1;
-            map[vertex] = new Heuristic.Data(vertex, costs[vertex]);
+            map[vertex] = new GreedyHeuristic.Data(vertex, costs[vertex]);
         }
 
         costs[srcVertexNum] = 0;
@@ -359,7 +359,7 @@ public class Heuristic {
         pQueue.add(map[srcVertexNum]);
 
         while (!pQueue.isEmpty()) {
-            Heuristic.Data u = pQueue.poll();
+            GreedyHeuristic.Data u = pQueue.poll();
             for (int neighbor : neighbors.get(u.vertexNum)) {
                 if (adjacencyMatrix[u.vertexNum][neighbor] != null) {
                     //double altDistance = costs[u.vertexNum] + adjacencyMatrix[u.vertexNum][neighbor].cost;
