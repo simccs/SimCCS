@@ -5,7 +5,6 @@ import com.bbn.openmap.dataAccess.shape.EsriPolyline;
 import com.bbn.openmap.dataAccess.shape.EsriPolylineList;
 import com.bbn.openmap.dataAccess.shape.EsriShapeExport;
 import com.bbn.openmap.omGraphics.OMGraphic;
-import dataStore.DataInOut;
 import dataStore.DataStorer;
 import dataStore.Edge;
 import dataStore.Sink;
@@ -265,7 +264,7 @@ public class ControlActions {
                 } else if (modelVersion == 2) {
                     MPSWriter.writeCapPriceMPS("price.mps", data, Double.parseDouble(crf), Double.parseDouble(numYears), Double.parseDouble(capacityTarget), basePath, dataset, scenario, modelVersion);
                 } else if (modelVersion == 3) {
-                    DataInOut.loadTimeConfiguration();
+                    data.loadTimeConfiguration();
                     MPSWriter.writeSimpleTimeMPS("time.mps", data, Double.parseDouble(crf), basePath, dataset, scenario);
                 }
             }
@@ -275,7 +274,7 @@ public class ControlActions {
     // Price simulation
     public void runPriceSimulation(String crf, String numYears, String inputPrice, String numPairs, int modelVersion) {
         // Load simulation parmeters.
-        DataInOut.loadPriceConfiguration();
+        data.loadPriceConfiguration();
         double prices[] = data.getPriceConfiguration();
         if (prices == null) {
             prices = new double[]{Double.parseDouble(inputPrice)};
@@ -306,10 +305,10 @@ public class ControlActions {
             runGreedyHeuristic(crf, numYears, inputPrice, numPairs, modelVersion, solutionPriceDirectory);
 
             // Create shapefiles.
-            Solution soln = DataInOut.loadGreedyHeuristicSolution(basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + "price-" + price + "h");
-            DataInOut.makeShapeFiles(basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + "price-" + price + "h", soln);
-            DataInOut.makeCandidateShapeFiles(basePath + "/" + dataset + "/Scenarios/" + scenario);
-            DataInOut.makeSolutionFile(basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + "price-" + price + "h", soln);
+            Solution soln = data.loadGreedyHeuristicSolution(basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + "price-" + price + "h");
+            data.makeShapeFiles(basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + "price-" + price + "h", soln);
+            data.makeCandidateShapeFiles(basePath + "/" + dataset + "/Scenarios/" + scenario);
+            data.makeSolutionFile(basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + "price-" + price + "h", soln);
 
             // Update aggregation file.
             aggregateResults.append(price + "," + soln.getAnnualCaptureAmount() + "," + soln.getNumOpenedSources() + "," + soln.getNumOpenedSinks() + ",TBD,");
@@ -318,7 +317,7 @@ public class ControlActions {
         }
 
         // Write aggregation file.
-        DataInOut.makePriceAggregationFile(basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/aggregateResults.csv", aggregateResults.toString());
+        data.makePriceAggregationFile(basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/aggregateResults.csv", aggregateResults.toString());
     }
 
     // Heuristic
@@ -347,7 +346,7 @@ public class ControlActions {
         heuristic.solve(Integer.parseInt(numPairs), modelVersion);
 
         // Save solution
-        DataInOut.saveHeuristicSolution(directory, heuristic);
+        data.saveHeuristicSolution(directory, heuristic);
     }
 
     private void runFlowHeuristic(String crf, String numYears, String capacityTarget, int modelVersion) {
@@ -451,7 +450,7 @@ public class ControlActions {
                 // Make solution sub directories.
                 if (modelVersion == 3) {
                     // Determine number of timeslots from MPS file.
-                    int numTimeslots = DataInOut.determineNumTimeslots(mipPath);
+                    int numTimeslots = data.determineNumTimeslots(mipPath);
 
                     for (int timeslot = 1; timeslot <= numTimeslots; timeslot++) {
                         File solutionSubDirectory = new File(basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + run + "/timeslot-" + timeslot);
@@ -492,7 +491,7 @@ public class ControlActions {
                 @Override
                 public void changed(ObservableValue<? extends String> observableValue, String oldLoc, String newLoc) {
                     if (newLoc.contains("download")) {
-                        DataInOut.downloadFile(newLoc);
+                        data.downloadFile(newLoc);
                     }
                 }
             });
@@ -599,29 +598,29 @@ public class ControlActions {
             String solutionPath = basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + file;
 
             if (file.contains("greedy")) {
-                Solution soln = DataInOut.loadGreedyHeuristicSolution(solutionPath);
+                Solution soln = data.loadGreedyHeuristicSolution(solutionPath);
                 displaySolution(file, soln, solutionValues);
             } else if (file.contains("flow")) {
-                Solution soln = DataInOut.loadSolution(solutionPath, -1);
+                Solution soln = data.loadSolution(solutionPath, -1);
                 displaySolution(file, soln, solutionValues);
             } else if (file.contains("cap")) {
-                Solution soln = DataInOut.loadSolution(solutionPath, -1);
+                Solution soln = data.loadSolution(solutionPath, -1);
                 displaySolution(file, soln, solutionValues);
             } else if (file.contains("price")) {
-                Solution soln = DataInOut.loadSolution(solutionPath, -1);
+                Solution soln = data.loadSolution(solutionPath, -1);
                 displaySolution(file, soln, solutionValues);
             } else if (file.contains("time")) {
                 gui.showSubSolutionMenu();
 
                 // Populate sub directory
-                int numTimeslots = DataInOut.determineNumTimeslots(solutionPath + "/time.mps");
+                int numTimeslots = data.determineNumTimeslots(solutionPath + "/time.mps");
                 ArrayList<String> solns = new ArrayList<>();
                 for (int timeslot = 1; timeslot <= numTimeslots; timeslot++) {
                     solns.add("timeslot-" + timeslot);
                 }
                 gui.getSolutionChoice().setItems(FXCollections.observableArrayList(solns));
             } else {
-                Solution soln = DataInOut.loadSolution(solutionPath, -1);
+                Solution soln = data.loadSolution(solutionPath, -1);
                 displaySolution(file, soln, solutionValues);
             }
         }
@@ -631,7 +630,7 @@ public class ControlActions {
         if (solutionName != null && solutionName.contains("timeslot-")) {
             int timeslot = Integer.parseInt(solutionName.substring(9)) - 1;
             String solutionPath = basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + parent;
-            Solution soln = DataInOut.loadSolution(solutionPath, timeslot);
+            Solution soln = data.loadSolution(solutionPath, timeslot);
             displaySolution(parent + "/" + solutionName, soln, solutionValues);
         }
     }
@@ -720,9 +719,9 @@ public class ControlActions {
         solutionValues[12].setText(Double.toString(round(soln.getUnitTotalCost(), 2)));
 
         // Write to shapefiles.
-        DataInOut.makeShapeFiles(basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + file, soln);
-        DataInOut.makeCandidateShapeFiles(basePath + "/" + dataset + "/Scenarios/" + scenario);
-        DataInOut.makeSolutionFile(basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + file, soln);
+        data.makeShapeFiles(basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + file, soln);
+        data.makeCandidateShapeFiles(basePath + "/" + dataset + "/Scenarios/" + scenario);
+        data.makeSolutionFile(basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + file, soln);
 
         //determineROW(soln, basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + file);
     }
@@ -867,7 +866,7 @@ public class ControlActions {
         HashMap<Sink, Integer> sinkPopularity = new HashMap<>();
         HashMap<Edge, Integer> edgePopularity = new HashMap<>();
         for (int i = 0; i < 100; i++) {
-            Solution soln = DataInOut.loadSolution(basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + file + "/run" + i, -1);
+            Solution soln = data.loadSolution(basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + file + "/run" + i, -1);
 
             HashMap<Edge, Double> edgeTransportAmounts = soln.getEdgeTransportAmounts();
             HashMap<Source, Double> sourceCaptureAmounts = soln.getSourceCaptureAmounts();
@@ -940,7 +939,7 @@ public class ControlActions {
         }
 
         // Write to shapefiles.
-        DataInOut.makeShapeFiles(basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + file, aggSoln);
+        data.makeShapeFiles(basePath + "/" + dataset + "/Scenarios/" + scenario + "/Results/" + file, aggSoln);
     }
 
     public double rawXtoDisplayX(double rawX) {
