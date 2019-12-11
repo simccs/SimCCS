@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
+import solver.GreedyHeuristic;
 import solver.Solver;
 
 /**
@@ -18,6 +19,8 @@ public class DataStorer {
     public String scenario;
 
     private Solver solver;
+
+    private DataInOut dataInOut = new DataInOut();
 
     // Geospatial data.
     private int width;  // Number of columns
@@ -83,7 +86,7 @@ public class DataStorer {
 
     public void generateDelaunayPairs() {
         delaunayPairs = solver.generateDelaunayPairs();
-        DataInOut.saveDelaunayPairs();
+        dataInOut.saveDelaunayPairs();
     }
 
     public void generateCandidateGraph() {
@@ -103,7 +106,7 @@ public class DataStorer {
                 graphEdgeRightOfWayCosts = (HashMap<Edge, Double>) costComponents[0];
                 graphEdgeConstructionCosts = (HashMap<Edge, Double>) costComponents[1];
 
-                DataInOut.saveCandidateGraph();
+                dataInOut.saveCandidateGraph();
             }
         } else {
             String text = "";
@@ -153,7 +156,7 @@ public class DataStorer {
 
     public void loadNetworkCosts() {
         if (constructionCosts == null) {
-            DataInOut.loadCosts();
+            dataInOut.loadCosts();
 
             // Make right of way and construction costs
             if (graphEdgeRoutes != null) {
@@ -590,7 +593,7 @@ public class DataStorer {
         solver = s;
 
         // Load data from files.
-        DataInOut.loadData(basePath, dataset, scenario, this);
+        dataInOut.loadData(basePath, dataset, scenario, this);
     }
 
     public void setTimeConfiguration(double[][] timeConfiguration) {
@@ -599,5 +602,49 @@ public class DataStorer {
 
     public void setPriceConfiguration(double[] priceConfiguration) {
         this.priceConfiguration = priceConfiguration;
+    }
+
+    public void loadTimeConfiguration() {
+        dataInOut.loadTimeConfiguration();
+    }
+
+    public void loadPriceConfiguration() {
+        dataInOut.loadPriceConfiguration();
+    }
+
+	public Solution loadGreedyHeuristicSolution(String solutionPath) {
+		return dataInOut.loadGreedyHeuristicSolution(solutionPath);
+	}
+
+	public void makeShapeFiles(String path, Solution soln) {
+        dataInOut.makeShapeFiles(path, soln);
+	}
+
+	public void makeCandidateShapeFiles(String path) {
+        dataInOut.makeCandidateShapeFiles(path);
+	}
+
+	public void makeSolutionFile(String path, Solution soln) {
+        dataInOut.makeSolutionFile(path, soln);
+	}
+
+	public void makePriceAggregationFile(String path, String content) {
+        dataInOut.makePriceAggregationFile(path, content);
+	}
+
+	public void downloadFile(String urlPath) {
+        dataInOut.downloadFile(urlPath);
+	}
+
+	public Solution loadSolution(String solutionPath, int timeslot) {
+        return dataInOut.loadSolution(solutionPath, timeslot);
+	}
+
+	public int determineNumTimeslots(String mpsFilePath) {
+        return dataInOut.determineNumTimeslots(mpsFilePath);
+    }
+    
+    public void saveHeuristicSolution(File solutionDirectory, GreedyHeuristic heuristic) {
+        dataInOut.saveHeuristicSolution(solutionDirectory, heuristic);
     }
 }

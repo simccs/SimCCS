@@ -44,16 +44,16 @@ import solver.GreedyHeuristic;
  */
 public class DataInOut {
 
-    private static String basePath;
-    private static String dataset;
-    private static String scenario;
-    private static DataStorer data;
+    private String basePath;
+    private String dataset;
+    private String scenario;
+    private DataStorer data;
 
-    public static void loadData(String basePath, String dataset, String scenario, DataStorer data) {
-        DataInOut.basePath = basePath;
-        DataInOut.dataset = dataset;
-        DataInOut.scenario = scenario;
-        DataInOut.data = data;
+    public void loadData(String basePath, String dataset, String scenario, DataStorer data) {
+        this.basePath = basePath;
+        this.dataset = dataset;
+        this.scenario = scenario;
+        this.data = data;
 
         System.out.println("Loading Geography...");
         loadGeography();
@@ -70,7 +70,7 @@ public class DataInOut {
         System.out.println("Data Loaded.");
     }
 
-    private static void loadGeography() {
+    private void loadGeography() {
         String path = basePath + "/" + dataset + "/BaseData/CostNetwork/Construction Costs.txt";
         try (BufferedReader br = new BufferedReader(new FileReader(path))) {
             br.readLine();
@@ -130,7 +130,7 @@ public class DataInOut {
         }
     }
 
-    public static void loadCosts() {
+    public void loadCosts() {
         double[][] rightOfWayCosts = new double[0][0];
         double[][] constructionCosts = new double[0][0];
         double[][] routingCosts = new double[0][0];
@@ -288,7 +288,7 @@ public class DataInOut {
         data.setRoutingCosts(routingCosts);
     }
 
-    private static void loadSources() {
+    private void loadSources() {
         String sourcePath = basePath + "/" + dataset + "/Scenarios/" + scenario + "/Sources/Sources.txt";
         try (BufferedReader br = new BufferedReader(new FileReader(sourcePath))) {
             br.readLine();
@@ -312,7 +312,7 @@ public class DataInOut {
         }
     }
 
-    private static void loadSinks() {
+    private void loadSinks() {
         String sinkPath = basePath + "/" + dataset + "/Scenarios/" + scenario + "/Sinks/Sinks.txt";
         try (BufferedReader br = new BufferedReader(new FileReader(sinkPath))) {
             br.readLine();
@@ -339,7 +339,7 @@ public class DataInOut {
         }
     }
 
-    private static void loadTransport() {
+    private void loadTransport() {
         String transportPath = basePath + "/" + dataset + "/Scenarios/" + scenario + "/Transport/Linear.txt";
         try (BufferedReader br = new BufferedReader(new FileReader(transportPath))) {
             br.readLine();
@@ -377,7 +377,7 @@ public class DataInOut {
         }
     }
 
-    private static void loadCandidateGraph() {
+    private void loadCandidateGraph() {
         // Check if file exists
         String candidateGraphPath = basePath + "/" + dataset + "/Scenarios/" + scenario + "/Network/CandidateNetwork/CandidateNetwork.txt";
         if (new File(candidateGraphPath).exists()) {
@@ -461,7 +461,7 @@ public class DataInOut {
         }
     }
 
-    private static void loadDelaunayPairs() {
+    private void loadDelaunayPairs() {
         // Check if file exists
         String delaunayPairsPath = basePath + "/" + dataset + "/Scenarios/" + scenario + "/Network/DelaunayNetwork/DelaunayPaths.txt";
         if (new File(delaunayPairsPath).exists()) {
@@ -492,7 +492,7 @@ public class DataInOut {
         }
     }
 
-    public static void loadPriceConfiguration() {
+    public void loadPriceConfiguration() {
         // Check if file exists
         String pricesPath = basePath + "/" + dataset + "/Scenarios/" + scenario + "/Configurations/priceInput.csv";
         if (new File(pricesPath).exists()) {
@@ -521,7 +521,7 @@ public class DataInOut {
         }
     }
 
-    public static void loadTimeConfiguration() {
+    public void loadTimeConfiguration() {
         // Check if file exists
         String timeConfigurationPath = basePath + "/" + dataset + "/Scenarios/" + scenario + "/Configurations/timeInput.csv";
         if (new File(timeConfigurationPath).exists()) {
@@ -554,7 +554,7 @@ public class DataInOut {
         }
     }
 
-    public static void saveDelaunayPairs() {
+    public void saveDelaunayPairs() {
         HashSet<Edge> delaunayPairs = data.getDelaunayPairs();
 
         String delaunayPairsPath = basePath + "/" + dataset + "/Scenarios/" + scenario + "/Network/DelaunayNetwork/DelaunayPaths.txt";
@@ -582,7 +582,7 @@ public class DataInOut {
         }
     }
 
-    public static void saveCandidateGraph() {
+    public void saveCandidateGraph() {
         HashMap<Edge, Double> graphEdgeCosts = data.getGraphEdgeCosts();
         HashMap<Edge, int[]> graphEdgeRoutes = data.getGraphEdgeRoutes();
         HashMap<Edge, Double> graphEdgeConstructionCosts = data.getGraphEdgeConstructionCosts();
@@ -607,7 +607,7 @@ public class DataInOut {
     }
 
     // Heuristic
-    public static void saveHeuristicSolution(File solutionDirectory, GreedyHeuristic heuristic) {
+    public void saveHeuristicSolution(File solutionDirectory, GreedyHeuristic heuristic) {
         // Collect data.
         Source[] sources = heuristic.getSources();
         Sink[] sinks = heuristic.getSinks();
@@ -656,7 +656,7 @@ public class DataInOut {
     }
 
     // Heuristic
-    public static Solution loadGreedyHeuristicSolution(String solutionPath) {
+    public Solution loadGreedyHeuristicSolution(String solutionPath) {
         Solution soln = new Solution();
         Source[] sources = data.getSources();
         Sink[] sinks = data.getSinks();
@@ -710,7 +710,7 @@ public class DataInOut {
         return soln;
     }
 
-    public static Solution loadSolution(String solutionPath, int timeslot) {
+    public Solution loadSolution(String solutionPath, int timeslot) {
         double threshold = .000001;
         Solution soln = new Solution();
 
@@ -928,7 +928,7 @@ public class DataInOut {
         return soln;
     }
 
-    public static int determineNumTimeslots(String mpsFilePath) {
+    public int determineNumTimeslots(String mpsFilePath) {
         File mpsFile = new File(mpsFilePath);
         HashSet<Integer> timeslots = new HashSet<>();
 
@@ -955,7 +955,7 @@ public class DataInOut {
         return timeslots.size();
     }
 
-    public static void makeShapeFiles(String path, Solution soln) {
+    public void makeShapeFiles(String path, Solution soln) {
         // Make shapefiles if they do not already exist.
         File newDir = new File(path + "/shapeFiles/");
         if (!newDir.exists()) {
@@ -1128,7 +1128,7 @@ public class DataInOut {
         }
     }
 
-    public static void makeCandidateShapeFiles(String path) {
+    public void makeCandidateShapeFiles(String path) {
         // Make shapefiles if they do not already exist.
         File newDir = new File(path + "/shapeFiles/");
         if (!newDir.exists()) {
@@ -1269,7 +1269,7 @@ public class DataInOut {
         }
     }
 
-    public static void makeProjectionFile(String name, String path) {
+    public void makeProjectionFile(String name, String path) {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(new File(path, name + ".prj")))) {
             bw.write("GEOGCS[\"GCS_North_American_1983\",DATUM[\"D_North_American_1983\",SPHEROID[\"GRS_1980\",6378137.0,298.257222101]],PRIMEM[\"Greenwich\",0.0],UNIT[\"Degree\",0.0174532925199433]]");
         } catch (IOException e) {
@@ -1278,7 +1278,7 @@ public class DataInOut {
 
     }
 
-    public static void makeSolutionFile(String path, Solution soln) {
+    public void makeSolutionFile(String path, Solution soln) {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(new File(path, "solution.csv")))) {
             bw.write("Project Length," + soln.getProjectLength() + "\n");
             bw.write("CRF," + soln.getCRF() + "\n");
@@ -1321,7 +1321,7 @@ public class DataInOut {
         }
     }
 
-    public static void makePriceAggregationFile(String path, String content) {
+    public void makePriceAggregationFile(String path, String content) {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(path))) {
             bw.write(content);
         } catch (IOException e) {
@@ -1329,7 +1329,7 @@ public class DataInOut {
         }
     }
 
-    public static void makeGenerateFile(String path, Solution soln) {
+    public void makeGenerateFile(String path, Solution soln) {
         File newDir = new File(path + "/genFiles");
         if (true) {
             newDir.mkdir();
@@ -1392,7 +1392,7 @@ public class DataInOut {
     }
 
     // Download file from url
-    public static void downloadFile(String urlPath) {
+    public void downloadFile(String urlPath) {
         HttpURLConnection connection;
 
         try {
