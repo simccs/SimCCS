@@ -215,12 +215,12 @@ public class GreedyHeuristic {
                     // Update hosting amount
                     backEdge.currentHostingAmount -= transferAmount;
                 } else if (transferAmount > backEdge.currentHostingAmount) {    //If front edge is now needed
-                    backEdge.currentSize = 0;
-                    backEdge.currentHostingAmount = 0;
-
                     int newSize = getNewPipelineSize(frontEdge, transferAmount - backEdge.currentHostingAmount);
                     frontEdge.currentSize = newSize;
                     frontEdge.currentHostingAmount = transferAmount - backEdge.currentHostingAmount;
+                    
+                    backEdge.currentSize = 0;
+                    backEdge.currentHostingAmount = 0;
                 } else {
                     backEdge.currentSize = 0;
                     backEdge.currentHostingAmount = 0;
