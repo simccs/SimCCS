@@ -809,7 +809,7 @@ public class DataInOut {
                                 soln.setEdgeTrend(new Edge(unidirEdge.v1, unidirEdge.v2), Integer.parseInt(components[2]));
                             }
                         } else if (components[0].equals("w")) {
-                            soln.addSinkNumWells(sinks[Integer.parseInt(components[1])], Integer.parseInt(variable[2]));
+                            soln.addSinkNumWells(sinks[Integer.parseInt(components[1])], (int) Math.round(Double.parseDouble(variable[2])));
                         }
                     } else {
                         if (components[0].equals("a") && (Integer.parseInt(components[2]) == timeslot)) {
