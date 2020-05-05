@@ -493,6 +493,14 @@ public class DataStorer {
         return priceConfiguration;
     }
 
+    public double[][] getConstructionCosts() {
+        return constructionCosts;
+    }
+
+    public double[][] getRoutingCosts() {
+        return routingCosts;
+    }
+
     // Data element set methods
     // Heuristic
     public void setProjectLength(int projectLength) {
