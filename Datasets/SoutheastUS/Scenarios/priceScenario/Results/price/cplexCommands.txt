@@ -1,0 +1,5 @@
+set logfile *
+read /Users/yaw/Box/CCS/SimCCS/SimCCS/Datasets/SoutheastUS/Scenarios/priceScenario/Results/price28082020-06260025/price.mps
+opt
+write /Users/yaw/Box/CCS/SimCCS/SimCCS/Datasets/SoutheastUS/Scenarios/priceScenario/Results/price28082020-06260025/solution.sol
+quit

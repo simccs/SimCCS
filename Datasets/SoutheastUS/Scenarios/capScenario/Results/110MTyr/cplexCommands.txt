@@ -1,0 +1,5 @@
+set logfile *
+read /Users/yaw/Box/CCS/SimCCS/SimCCS/Datasets/SoutheastUS/Scenarios/capScenario/Results/cap28082020-06240006/cap.mps
+opt
+write /Users/yaw/Box/CCS/SimCCS/SimCCS/Datasets/SoutheastUS/Scenarios/capScenario/Results/cap28082020-06240006/solution.sol
+quit

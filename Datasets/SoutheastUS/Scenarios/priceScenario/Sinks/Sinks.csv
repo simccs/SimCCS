@@ -1,0 +1,10 @@
+Required data,,,,,,,,,,,,Not-required data,,,,,,
+Unique ID,Name,Storage capacity (MtCO2),USE COLUMN D or COLUMNS EÐJ (NOT BOTH),,,,,,,X-LON,Y-LAT,Comment,Extra column,Extra column,Extra column,Extra column,Extra column,Extra column
+,,,Total unit cost ($/tCO2),Site-wide fixed capital cost ($M),Site-wide fixed O&M cost ($M/yr),Individual well injection rate (MtCO2/yr),Injection fixed capital cost ($M),Injection fixed O&M cost ($M/yr),Injection variable O&M cost ($/tCO2),,,,,,,,,
+1,1,379.000,0.00,40.951,0.000,0.375,4.575,0.175,-97.39,-91.298,28.992,,,,,,,
+2,2,379.000,0.00,40.951,0.000,0.375,4.575,0.175,-97.39,-91.1764,31.5559,,,,,,,
+3,3,360.000,0.00,63.063,0.000,0.180,3.859,0.201,-96.98,-88.5068,30.5078,,,,,,,
+4,4,498.000,0.00,63.063,0.000,0.500,3.602,0.181,-97.16,-88.2337,31.093,,,,,,,
+5,5,480.000,0.00,18.178,0.000,0.500,4.204,0.191,-97.26,-86.7961,30.7153,,,,,,,
+6,6,549.000,0.00,63.063,0.000,0.600,3.017,0.154,-97.17,-84.8449,30.6128,,,,,,,
+7,7,845.000,0.00,63.063,0.000,0.800,2.930,0.135,-97.23,-81.6781,31.7306,,,,,,,
